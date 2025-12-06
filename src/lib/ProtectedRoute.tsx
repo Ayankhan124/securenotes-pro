@@ -1,18 +1,18 @@
+// src/lib/ProtectedRoute.tsx
+import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./auth";
 
-export default function ProtectedRoute({ children }: { children: JSX.Element }) {
+export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    // simple loader while checking auth
     return <div className="min-h-screen grid place-items-center">Checking authentication…</div>;
   }
 
   if (!user) {
-    // redirect to login, preserve attempted path (optional)
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <>{children}</>;
 }
