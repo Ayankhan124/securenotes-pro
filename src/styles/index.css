@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* base */
+:root{
+  --primary: #1E3A8A;
+  --secondary: #F8FAFC;
+  --accent: #10B981;
+}
+
+/* body */
+html,body,#root { height: 100%; }
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
+  color: #0f172a;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Hero gradient overlay */
+.hero-bg {
+  background: linear-gradient(135deg, rgba(30,58,138,0.08) 0%, rgba(16,185,129,0.03) 100%);
+}
+
+/* soft card */
+.card {
+  @apply bg-white shadow-md rounded-lg;
+}
+
+/* subtle glass */
+.glass {
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* watermark-safe text style for hero overlaid text */
+.hero-accent {
+  color: var(--primary);
+}
+
+/* small utilities */
+.vh-70 { min-height: 70vh; }
