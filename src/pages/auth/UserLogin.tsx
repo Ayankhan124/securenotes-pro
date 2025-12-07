@@ -7,45 +7,91 @@ export default function UserLogin() {
   const [password, setPassword] = useState("");
   const nav = useNavigate();
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return alert(error.message);
 
-    // optional: check profile status (active)
-    const userRes = await supabase.auth.getUser();
-    const userId = userRes.data.user?.id;
-    if (userId) {
-      const { data: profile } = await supabase.from("profiles").select("status").eq("id", userId).single();
-      if (!profile || profile.status !== "active") {
-        // sign out and block until admin approval
-        await supabase.auth.signOut();
-        return alert("Account not active. Contact admin.");
-      }
-    }
-
     nav("/dashboard");
+  }
+
+  async function handleGoogleLogin() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin + "/dashboard", // after login
+      },
+    });
+
+    if (error) alert(error.message);
+    // the browser will redirect to Google → back to redirectTo
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4">Sign in</h2>
-
-        <label className="block text-sm mb-2">
-          <input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full mt-1 p-2 border rounded" required />
-        </label>
-
-        <label className="block text-sm mb-4">
-          <input placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full mt-1 p-2 border rounded" required />
-        </label>
-
-        <button type="submit" className="w-full py-2 bg-primary text-white rounded">Sign in</button>
-
-        <div className="mt-4 text-sm text-center">
-          <Link to="/register" className="text-primary">Create an account</Link>
+      <div className="bg-white p-8 rounded shadow w-full max-w-md space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-1">User Login</h2>
+          <p className="text-sm text-gray-500">
+            Sign in with email or continue with Google.
+          </p>
         </div>
-      </form>
+
+        {/* Google button */}
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          className="w-full py-2 border border-gray-300 rounded-md flex items-center justify-center gap-2 text-sm"
+        >
+          <span className="text-xl">G</span>
+          <span>Continue with Google</span>
+        </button>
+
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span>or</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        {/* Email/password form */}
+        <form onSubmit={handleEmailLogin} className="space-y-3">
+          <label className="block text-sm">
+            <span className="text-xs text-gray-600">Email</span>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full mt-1 p-2 border rounded"
+            />
+          </label>
+
+          <label className="block text-sm">
+            <span className="text-xs text-gray-600">Password</span>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full mt-1 p-2 border rounded"
+            />
+          </label>
+
+          <button
+            type="submit"
+            className="w-full py-2 bg-primary text-white rounded font-medium"
+          >
+            Sign in
+          </button>
+        </form>
+
+        <div className="text-sm text-center text-gray-600">
+          No account yet?{" "}
+          <Link to="/register" className="text-primary">
+            Create one
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
