@@ -1,138 +1,57 @@
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../lib/auth";
 
 export default function LandingPage() {
-  return (
-    <main className="page-shell">
-      <div className="max-w-6xl mx-auto px-6 pb-16 pt-10 lg:pt-16">
-        {/* hero layout */}
-        <section className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center">
-          {/* left: text + CTAs */}
-          <div>
-            <div className="mb-4 flex flex-wrap gap-2 text-xs text-gray-500">
-              <span className="badge-pill bg-emerald-50 text-emerald-700 border border-emerald-100">
-                • End-to-end access controls
-              </span>
-              <span className="badge-pill bg-indigo-50 text-indigo-700 border border-indigo-100">
-                • Watermarked views
-              </span>
-              <span className="badge-pill bg-amber-50 text-amber-700 border border-amber-100">
-                • Full audit trail
-              </span>
-            </div>
+  const { user, loading } = useAuth();
+  const nav = useNavigate();
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-4">
-              Secure, admin-controlled{" "}
-              <span className="text-primary">note sharing</span>
-            </h1>
+  // If already logged in, send them to the dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      nav("/dashboard");
+    }
+  }, [user, loading, nav]);
 
-            <p className="text-slate-600 text-base sm:text-lg max-w-xl mb-8">
-              One-way distribution for high-sensitivity content. Watermarked,
-              audited and tightly permissioned — built for organizations that
-              cannot tolerate leakage.
-            </p>
-
-            <div className="flex flex-wrap gap-3 mb-6">
-              <Link to="/login">
-                <button className="px-6 py-2.5 rounded-md bg-primary text-white text-sm font-medium shadow-sm hover:bg-indigo-800">
-                  Sign in as User
-                </button>
-              </Link>
-              <Link to="/register">
-                <button className="px-5 py-2.5 rounded-md border border-slate-300 text-sm font-medium text-slate-800 bg-white hover:bg-slate-50">
-                  Create account
-                </button>
-              </Link>
-            </div>
-
-            <p className="text-xs text-slate-500">
-              Admins can approve new accounts and assign which notes each user
-              can see. No downloads, no copy-paste, full visibility.
-            </p>
-          </div>
-
-          {/* right: preview card */}
-          <div className="hero-panel glass-card p-6 lg:p-8">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Latest note
-                </p>
-                <h2 className="mt-1 text-lg font-semibold text-slate-900">
-                  Quarterly Security Update — Read Only
-                </h2>
-              </div>
-              <span className="text-xs text-slate-400">Published 2 days ago</span>
-            </div>
-
-            <p className="text-sm text-slate-600 mb-4">
-              This is a preview of how notes are presented inside SecureNotes
-              Pro. Content is locked in a secure viewer with a dynamic watermark
-              and protections against copy &amp; paste where supported.
-            </p>
-
-            <div className="flex flex-wrap gap-3 mb-4">
-              <button className="px-4 py-1.5 rounded-md bg-slate-900 text-white text-xs font-medium">
-                Preview (demo)
-              </button>
-              <button className="px-4 py-1.5 rounded-md border border-slate-300 text-xs font-medium text-slate-700 bg-white">
-                Learn more
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 text-xs">
-              <div className="rounded-lg bg-slate-900/90 text-slate-100 px-3 py-2">
-                <div className="font-semibold text-[11px] mb-1">
-                  Lockdown view
-                </div>
-                <p className="text-[11px] text-slate-200/80">
-                  Screenshot-resistant viewer with watermark overlay per user.
-                </p>
-              </div>
-              <div className="rounded-lg bg-white/80 border border-slate-200 px-3 py-2">
-                <div className="font-semibold text-[11px] mb-1">
-                  Admin control
-                </div>
-                <p className="text-[11px] text-slate-600">
-                  Target notes to specific users and teams with audit logs.
-                </p>
-              </div>
-              <div className="rounded-lg bg-white/80 border border-slate-200 px-3 py-2">
-                <div className="font-semibold text-[11px] mb-1">
-                  Realtime alerts
-                </div>
-                <p className="text-[11px] text-slate-600">
-                  See when sensitive notes are opened and from which device.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* bottom feature cards */}
-        <section className="mt-14 grid gap-6 md:grid-cols-3">
-          <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold mb-2">Lockdown view</h3>
-            <p className="text-xs text-slate-600">
-              Watermarks, copy-blocking, and keyboard/print protections to
-              reduce casual leaks and screenshots.
-            </p>
-          </div>
-          <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold mb-2">Admin control</h3>
-            <p className="text-xs text-slate-600">
-              Create, target, and revoke access to notes. Every read is logged
-              with IP, device, and timestamp.
-            </p>
-          </div>
-          <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold mb-2">Realtime alerts</h3>
-            <p className="text-xs text-slate-600">
-              Users get notified when new content is published; admins see
-              engagement patterns over time.
-            </p>
-          </div>
-        </section>
+  // While we are checking the session, show a simple placeholder
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 animate-fade-in">
+        <p className="text-sm text-slate-500">Checking your session…</p>
       </div>
+    );
+  }
+
+  // Not logged in → show marketing / hero card
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-sky-50 to-slate-100 flex items-center justify-center px-4 animate-fade-in">
+      <section className="w-full max-w-3xl rounded-3xl bg-white shadow-xl border border-slate-100 px-8 py-10 text-center">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-3">
+          Welcome to <span className="text-indigo-600">SecureNotes Pro</span>
+        </h1>
+        <p className="text-sm text-slate-600 max-w-xl mx-auto mb-6">
+          Secure, admin-controlled document viewing for sensitive data.
+          Watermarked, audited, and read-only where possible — so your content
+          stays inside the walls.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+          <Link to="/login">
+            <button className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+              Sign In
+            </button>
+          </Link>
+          <Link to="/register">
+            <button className="rounded-md border border-slate-300 px-6 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              Create Account
+            </button>
+          </Link>
+        </div>
+
+        <p className="text-[11px] text-slate-400">
+          Admins control access • Watermarked viewing • No downloads
+        </p>
+      </section>
     </main>
   );
 }

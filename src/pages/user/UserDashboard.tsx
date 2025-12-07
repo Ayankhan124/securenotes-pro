@@ -87,7 +87,11 @@ export default function UserDashboard() {
             <div className="space-y-3">
               {mockNotes.map((note) => (
                 <Link key={note.id} to={`/notes/${note.id}`}>
-                  <article className="note-card flex items-center justify-between gap-3">
+                  <article
+  className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3
+             transition-all duration-200 ease-out
+             hover:-translate-y-1 hover:shadow-xl hover:border-indigo-300"
+>
                     <div className="min-w-0">
                       <h3 className="text-sm font-medium text-slate-900 truncate">
                         {note.title}

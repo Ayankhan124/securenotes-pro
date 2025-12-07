@@ -1,88 +1,149 @@
-import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { JSX, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { supabase } from "../../api/supabaseClient";
+import { getSignedFileUrl } from "../../api/storageClient";
 
-function createWatermarkDataUrl(text: string) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 400; canvas.height = 200;
-  const ctx = canvas.getContext('2d')!;
-  ctx.globalAlpha = 0.12;
-  ctx.font = "18px Inter";
-  ctx.fillStyle = '#000';
-  ctx.translate(0, 0);
-  ctx.rotate(-0.5);
-  ctx.fillText(text, 30, 100);
-  return canvas.toDataURL();
-}
+type AttachmentRow = {
+  id: string;
+  note_id: string;
+  name: string;
+  path: string;
+  mime_type: string;
+};
 
-export default function SecureNoteViewer(){
-  const { id } = useParams();
-  const [note, setNote] = useState<any>(null);
-  const [watermarkUrl, setWatermarkUrl] = useState<string>("");
+type SignedAttachment = AttachmentRow & { url: string };
 
-  useEffect(()=>{
-    async function load(){
-      // fetch note - ensure backend RLS restricts access
-      const { data } = await supabase.from('notes').select('*').eq('id', id).single();
-      setNote(data);
-      const user = await supabase.auth.getUser();
-      const email = user.data.user?.email ?? 'unknown';
-      setWatermarkUrl(createWatermarkDataUrl(`${email} • ${new Date().toLocaleString()}`));
-      // log access
-      await supabase.from('activity_logs').insert([{ user_id: user.data.user?.id, note_id: id, action: 'view' }]);
-    }
-    load();
-  }, [id]);
+export default function SecureNoteViewer(): JSX.Element {
+  const { id: noteId } = useParams<{ id: string }>();
+  const [attachments, setAttachments] = useState<SignedAttachment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{
-    // basic client-side deterrents
-    const onCopy = (e: ClipboardEvent) => e.preventDefault();
-    const onContext = (e: MouseEvent) => e.preventDefault();
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && ['s','p','c','x','a'].includes(e.key.toLowerCase())) e.preventDefault();
-    };
-    document.addEventListener('copy', onCopy);
-    document.addEventListener('contextmenu', onContext);
-    document.addEventListener('keydown', onKey);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        // log possible background switch
-        supabase.from('activity_logs').insert([{ action: 'visibility_hidden', note_id: id }]);
+  useEffect(() => {
+    if (!noteId) return;
+
+    (async () => {
+      setLoading(true);
+
+      // 1) Get attachment rows for this note
+      const { data, error } = await supabase
+        .from("attachments")
+        .select("*")
+        .eq("note_id", noteId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error loading attachments", error);
+        setLoading(false);
+        return;
       }
-    });
-    return () => {
-      document.removeEventListener('copy', onCopy as any);
-      document.removeEventListener('contextmenu', onContext as any);
-      document.removeEventListener('keydown', onKey as any);
-    };
-  }, [id]);
 
-  if (!note) return <div className="p-6">Loading...</div>;
+      const list = data ?? [];
+
+      // 2) For each one, create a signed URL
+      const withUrls: SignedAttachment[] = [];
+
+      for (const att of list) {
+        const url = await getSignedFileUrl(att.path);
+        if (!url) continue;
+        withUrls.push({ ...att, url });
+      }
+
+      setAttachments(withUrls);
+      setLoading(false);
+    })();
+  }, [noteId]);
 
   return (
-    <div className="min-h-screen relative bg-white p-8">
-      <div className="mb-4"><Link to="/dashboard" className="text-sm">Back</Link></div>
+    <main className="page-shell min-h-screen bg-slate-50">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="max-w-4xl mx-auto flex items-center justify-between px-4 py-3">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">
+              SecureNotes Pro
+            </div>
+            <div className="text-xs text-slate-500">
+              Secure note viewer (ID: {noteId})
+            </div>
+          </div>
+        </div>
+      </header>
 
-      <div className="relative overflow-hidden border rounded p-6 max-w-4xl mx-auto">
-        {/* content */}
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 className="text-2xl font-bold mb-3">{note.title}</h1>
-          <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: note.body }} />
+      <section className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* You can replace this text with real note content later */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h1 className="text-lg font-semibold text-slate-900 mb-1">
+            Protected note
+          </h1>
+          <p className="text-sm text-slate-600">
+            This is a placeholder text area for the note content. Right
+            now, we are focusing on displaying attached PDFs and images
+            securely.
+          </p>
         </div>
 
-        {/* watermark overlay */}
-        <div aria-hidden style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 2,
-          pointerEvents: 'none',
-          backgroundImage: `url(${watermarkUrl})`,
-          backgroundRepeat: 'repeat',
-          opacity: 0.9
-        }} />
-      </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Attachments
+          </h2>
 
-      <p className="mt-4 text-sm text-gray-500">Protected viewer — content cannot be downloaded from this page.</p>
-    </div>
+          {loading && (
+            <p className="mt-2 text-xs text-slate-500">Loading…</p>
+          )}
+
+          {!loading && attachments.length === 0 && (
+            <p className="mt-2 text-xs text-slate-500">
+              No attachments for this note.
+            </p>
+          )}
+
+          <div className="mt-4 space-y-4">
+            {attachments.map((att) => {
+              if (att.mime_type === "application/pdf") {
+                return (
+                  <div
+                    key={att.id}
+                    className="overflow-hidden rounded-lg border border-slate-200 h-80 bg-slate-50"
+                  >
+                    <iframe
+                      src={att.url}
+                      title={att.name}
+                      className="w-full h-full"
+                    />
+                  </div>
+                );
+              }
+
+              if (att.mime_type.startsWith("image/")) {
+                return (
+                  <div
+                    key={att.id}
+                    className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center"
+                  >
+                    <img
+                      src={att.url}
+                      alt={att.name}
+                      className="max-h-96 w-full object-contain"
+                    />
+                  </div>
+                );
+              }
+
+              // fallback: simple link
+              return (
+                <a
+                  key={att.id}
+                  href={att.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block text-xs text-primary underline"
+                >
+                  Open {att.name}
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
