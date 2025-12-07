@@ -1,136 +1,138 @@
 import { Link } from "react-router-dom";
-import Button from "../components/Button";
 
-/* Simple SVG logo - paste inline */
-function Logo({ className = "h-8 w-8" }: { className?: string }) {
+export default function LandingPage() {
   return (
-    <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <rect x="2" y="2" width="44" height="44" rx="8" fill="#1E3A8A"/>
-      <path d="M14 18h20v4H14zM14 26h20v4H14z" fill="white" opacity="0.95"/>
-    </svg>
-  );
-}
-
-export default function LandingPage(){
-  return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="w-full py-4 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Logo />
+    <main className="page-shell">
+      <div className="max-w-6xl mx-auto px-6 pb-16 pt-10 lg:pt-16">
+        {/* hero layout */}
+        <section className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center">
+          {/* left: text + CTAs */}
           <div>
-            <div className="text-lg font-semibold text-primary leading-4">SecureNotes Pro</div>
-            <div className="text-xs text-gray-500 -mt-0.5">Protected note distribution</div>
-          </div>
-        </div>
-
-        <nav className="flex items-center gap-4">
-          <Link to="/about" className="text-sm text-gray-600 hover:text-primary">About</Link>
-          <Link to="/contact" className="text-sm text-gray-600 hover:text-primary">Contact</Link>
-          <Link to="/login" className="text-sm text-gray-600 hover:text-primary">User Login</Link>
-          <Link to="/admin/login" className="text-sm text-primary font-medium">Admin Login</Link>
-        </nav>
-      </header>
-
-      {/* Hero */}
-      <main className="flex-1 grid place-items-center">
-        <section className="max-w-7xl w-full px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-6">
-              <h1 className="text-4xl md:text-5xl font-extrabold leading-tight hero-accent">
-                Secure, admin-controlled <span className="text-gradient">note sharing</span>
-              </h1>
-
-              <p className="mt-4 text-lg text-gray-600 max-w-xl">
-                One-way distribution for high-sensitivity content. Watermarked, audited and tightly permissioned — built for organizations that cannot tolerate leakage.
-              </p>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link to="/admin/login">
-                  <Button variant="primary">Get Started (Admin)</Button>
-                </Link>
-                <Link to="/login">
-                  <Button variant="outline">Sign in as User</Button>
-                </Link>
-                <a href="#features" className="self-center">
-                  <Button variant="ghost">Why SecureNotes?</Button>
-                </a>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-4 items-center text-sm text-gray-500">
-                <div className="inline-flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-green-400 inline-block" />
-                  <span>End-to-end access controls</span>
-                </div>
-                <div className="inline-flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-amber-400 inline-block" />
-                  <span>Watermarked views</span>
-                </div>
-                <div className="inline-flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-blue-400 inline-block" />
-                  <span>Full audit trail</span>
-                </div>
-              </div>
+            <div className="mb-4 flex flex-wrap gap-2 text-xs text-gray-500">
+              <span className="badge-pill bg-emerald-50 text-emerald-700 border border-emerald-100">
+                • End-to-end access controls
+              </span>
+              <span className="badge-pill bg-indigo-50 text-indigo-700 border border-indigo-100">
+                • Watermarked views
+              </span>
+              <span className="badge-pill bg-amber-50 text-amber-700 border border-amber-100">
+                • Full audit trail
+              </span>
             </div>
 
-            {/* Visual / card on right */}
-            <div className="lg:col-span-6 relative">
-              <div className="hero-bg card p-6 lg:p-8">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-gray-500">Latest note</div>
-                    <div className="font-semibold text-lg mt-1">Quarterly Security Update — Read Only</div>
-                  </div>
-                  <div className="text-sm text-gray-400">Published 2 days ago</div>
-                </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-4">
+              Secure, admin-controlled{" "}
+              <span className="text-primary">note sharing</span>
+            </h1>
 
-                <div className="mt-4 text-sm text-gray-600 line-clamp-4">
-                  This is a preview card to show how notes will be presented inside SecureNotes Pro. Notes are protected — the viewer overlays a dynamic watermark and prevents copy & paste where supported.
-                </div>
+            <p className="text-slate-600 text-base sm:text-lg max-w-xl mb-8">
+              One-way distribution for high-sensitivity content. Watermarked,
+              audited and tightly permissioned — built for organizations that
+              cannot tolerate leakage.
+            </p>
 
-                <div className="mt-6 flex gap-3">
-                  <Button variant="outline">Preview (Demo)</Button>
-                  <Button variant="ghost">Learn more</Button>
-                </div>
-              </div>
-
-              {/* subtle accent element */}
-              <div className="absolute -bottom-6 right-6 w-28 h-28 rounded-xl blur-xl opacity-30" style={{ background: "radial-gradient(circle at 30% 30%, #10B981, transparent 40%)" }} />
+            <div className="flex flex-wrap gap-3 mb-6">
+              <Link to="/login">
+                <button className="px-6 py-2.5 rounded-md bg-primary text-white text-sm font-medium shadow-sm hover:bg-indigo-800">
+                  Sign in as User
+                </button>
+              </Link>
+              <Link to="/register">
+                <button className="px-5 py-2.5 rounded-md border border-slate-300 text-sm font-medium text-slate-800 bg-white hover:bg-slate-50">
+                  Create account
+                </button>
+              </Link>
             </div>
+
+            <p className="text-xs text-slate-500">
+              Admins can approve new accounts and assign which notes each user
+              can see. No downloads, no copy-paste, full visibility.
+            </p>
           </div>
 
-          {/* Features */}
-          <div id="features" className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="card p-5">
-              <div className="text-sm font-medium text-primary">Lockdown view</div>
-              <p className="mt-2 text-sm text-gray-600">Watermarks, copy-blocking, and keyboard/print protections to reduce casual leaks.</p>
+          {/* right: preview card */}
+          <div className="hero-panel glass-card p-6 lg:p-8">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Latest note
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-slate-900">
+                  Quarterly Security Update — Read Only
+                </h2>
+              </div>
+              <span className="text-xs text-slate-400">Published 2 days ago</span>
             </div>
 
-            <div className="card p-5">
-              <div className="text-sm font-medium text-primary">Admin control</div>
-              <p className="mt-2 text-sm text-gray-600">Create, target, and revoke access to notes. Audit everything admins and users do.</p>
+            <p className="text-sm text-slate-600 mb-4">
+              This is a preview of how notes are presented inside SecureNotes
+              Pro. Content is locked in a secure viewer with a dynamic watermark
+              and protections against copy &amp; paste where supported.
+            </p>
+
+            <div className="flex flex-wrap gap-3 mb-4">
+              <button className="px-4 py-1.5 rounded-md bg-slate-900 text-white text-xs font-medium">
+                Preview (demo)
+              </button>
+              <button className="px-4 py-1.5 rounded-md border border-slate-300 text-xs font-medium text-slate-700 bg-white">
+                Learn more
+              </button>
             </div>
 
-            <div className="card p-5">
-              <div className="text-sm font-medium text-primary">Realtime alerts</div>
-              <p className="mt-2 text-sm text-gray-600">Users get immediate notifications when new content is published — and the admin sees engagement metrics.</p>
+            <div className="grid grid-cols-3 gap-3 text-xs">
+              <div className="rounded-lg bg-slate-900/90 text-slate-100 px-3 py-2">
+                <div className="font-semibold text-[11px] mb-1">
+                  Lockdown view
+                </div>
+                <p className="text-[11px] text-slate-200/80">
+                  Screenshot-resistant viewer with watermark overlay per user.
+                </p>
+              </div>
+              <div className="rounded-lg bg-white/80 border border-slate-200 px-3 py-2">
+                <div className="font-semibold text-[11px] mb-1">
+                  Admin control
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Target notes to specific users and teams with audit logs.
+                </p>
+              </div>
+              <div className="rounded-lg bg-white/80 border border-slate-200 px-3 py-2">
+                <div className="font-semibold text-[11px] mb-1">
+                  Realtime alerts
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  See when sensitive notes are opened and from which device.
+                </p>
+              </div>
             </div>
           </div>
-
         </section>
-      </main>
 
-      {/* Footer */}
-      <footer className="w-full border-t bg-transparent">
-        <div className="max-w-7xl mx-auto py-6 px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-gray-600">© {new Date().getFullYear()} SecureNotes Pro — Built for secure distribution</div>
-          <div className="flex items-center gap-4 text-sm">
-            <a className="text-gray-600 hover:text-primary" href="/terms">Terms</a>
-            <a className="text-gray-600 hover:text-primary" href="/privacy">Privacy</a>
-            <a className="text-gray-600 hover:text-primary" href="/contact">Contact</a>
+        {/* bottom feature cards */}
+        <section className="mt-14 grid gap-6 md:grid-cols-3">
+          <div className="glass-card p-5">
+            <h3 className="text-sm font-semibold mb-2">Lockdown view</h3>
+            <p className="text-xs text-slate-600">
+              Watermarks, copy-blocking, and keyboard/print protections to
+              reduce casual leaks and screenshots.
+            </p>
           </div>
-        </div>
-      </footer>
-    </div>
+          <div className="glass-card p-5">
+            <h3 className="text-sm font-semibold mb-2">Admin control</h3>
+            <p className="text-xs text-slate-600">
+              Create, target, and revoke access to notes. Every read is logged
+              with IP, device, and timestamp.
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <h3 className="text-sm font-semibold mb-2">Realtime alerts</h3>
+            <p className="text-xs text-slate-600">
+              Users get notified when new content is published; admins see
+              engagement patterns over time.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }

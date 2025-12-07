@@ -2,44 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-/* base */
-:root{
-  --primary: #1E3A8A;
-  --secondary: #F8FAFC;
-  --accent: #10B981;
+/* theme tokens */
+:root {
+  --primary: #1e3a8a;
+  --secondary: #f8fafc;
+  --accent: #10b981;
 }
 
-/* body */
-html,body,#root { height: 100%; }
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  background: radial-gradient(circle at top left, #e0f2fe 0, #f8fafc 45%, #f1f5f9 100%);
   color: #0f172a;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Hero gradient overlay */
-.hero-bg {
-  background: linear-gradient(135deg, rgba(30,58,138,0.08) 0%, rgba(16,185,129,0.03) 100%);
+/* reusable shells */
+.page-shell {
+  min-height: calc(100vh - 4rem); /* header height approx */
 }
 
-/* soft card */
-.card {
-  @apply bg-white shadow-md rounded-lg;
+/* soft “glass” card look */
+.glass-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 1rem;
+  box-shadow:
+    0 18px 30px rgba(15, 23, 42, 0.08),
+    0 2px 6px rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
-/* subtle glass */
-.glass {
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+/* hero gradient block */
+.hero-panel {
+  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.18), transparent 55%),
+    radial-gradient(circle at bottom left, rgba(37, 99, 235, 0.15), transparent 55%);
 }
 
-/* watermark-safe text style for hero overlaid text */
-.hero-accent {
-  color: var(--primary);
+/* subtle pill badges */
+.badge-pill {
+  @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium;
 }
 
-/* small utilities */
-.vh-70 { min-height: 70vh; }
+/* note cards on dashboard */
+.note-card {
+  @apply glass-card p-4 transition-transform transition-shadow duration-150 hover:-translate-y-0.5 hover:shadow-lg;
+}
+
+/* small helper */
+.vh-70 {
+  min-height: 70vh;
+}
