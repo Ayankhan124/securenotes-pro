@@ -105,3 +105,39 @@ body {
   transform: translateY(-1px);
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
 }
+
+/* Animated hero glow background */
+.hero-animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-animated::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background:
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.16), transparent 60%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.18), transparent 55%);
+  opacity: 0.7;
+  filter: blur(10px);
+  animation: hero-glow 10s ease-in-out infinite alternate;
+  z-index: -1;
+}
+
+@keyframes hero-glow {
+  0% {
+    transform: translate3d(-10px, -10px, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(10px, 5px, 0) scale(1.03);
+  }
+  100% {
+    transform: translate3d(-5px, 10px, 0) scale(1.02);
+  }
+}
+
+/* Slight fade-in for hero + sections */
+.section-fade-in {
+  animation: fade-in-up 0.5s ease-out both;
+}

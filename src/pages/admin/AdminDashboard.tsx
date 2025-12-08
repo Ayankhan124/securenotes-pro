@@ -5,7 +5,11 @@ import { supabase } from "../../api/supabaseClient";
 import { useAuth } from "../../lib/auth";
 
 // TODO: change this to YOUR real admin email(s)
-const ADMIN_EMAILS = ["ayankhan4024@gmail.com"];
+const ADMIN_EMAILS =
+  (import.meta.env.VITE_ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
 
 type Profile = {
   id: string;
