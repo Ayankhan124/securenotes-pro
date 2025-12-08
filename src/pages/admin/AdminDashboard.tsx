@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../api/supabaseClient";
 import { useAuth } from "../../lib/auth";
 
-// TODO: change this to YOUR real admin email(s)
+// Admin emails come from environment variable
 const ADMIN_EMAILS =
   (import.meta.env.VITE_ADMIN_EMAILS || "")
     .split(",")
@@ -22,7 +22,8 @@ type Profile = {
 type Note = {
   id: string;
   title: string | null;
-  category?: string | null;
+  subject: string | null;
+  semester: string | null;
 };
 
 export default function AdminDashboard() {
@@ -40,9 +41,10 @@ export default function AdminDashboard() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
 
-  // NEW: state for creating notes
-  const [newNoteTitle, setNewNoteTitle] = useState("");
-  const [newNoteCategory, setNewNoteCategory] = useState("");
+  // NEW: note creation fields
+  const [newTitle, setNewTitle] = useState("");
+  const [newSubject, setNewSubject] = useState("");
+  const [newSemester, setNewSemester] = useState("");
   const [createNoteLoading, setCreateNoteLoading] = useState(false);
   const [createNoteError, setCreateNoteError] = useState<string | null>(null);
   const [createNoteMessage, setCreateNoteMessage] = useState<string | null>(
@@ -52,7 +54,7 @@ export default function AdminDashboard() {
   const isAdmin =
     !!user && ADMIN_EMAILS.includes((user.email || "").toLowerCase());
 
-  // --- Guard: must be signed in ---
+  // --- Auth guards ---
   if (!user) {
     return (
       <main className="page-shell min-h-screen flex items-center justify-center bg-slate-50">
@@ -63,7 +65,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // --- Guard: must be one of the configured admin emails ---
   if (!isAdmin) {
     return (
       <main className="page-shell min-h-screen flex items-center justify-center bg-slate-50">
@@ -73,7 +74,7 @@ export default function AdminDashboard() {
           </h1>
           <p className="mt-2 text-sm text-slate-600 max-w-sm">
             Your account is signed in as <strong>{user.email}</strong>, which is
-            not listed as an admin email.
+            not listed as an admin email in <code>VITE_ADMIN_EMAILS</code>.
           </p>
         </div>
       </main>
@@ -83,22 +84,21 @@ export default function AdminDashboard() {
   // ----------------- LOAD DATA -----------------
 
   useEffect(() => {
-    loadPendingUsers();
+    loadUsers();
     loadNotes();
   }, []);
 
-  async function loadPendingUsers() {
+  async function loadUsers() {
     setLoadingUsers(true);
     setUsersError(null);
 
     const { data, error } = await supabase
       .from("profiles")
       .select("id, email, name, role, status")
-      .eq("status", "pending")
       .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("Error loading pending users", error);
+      console.error("Error loading users", error);
       setUsersError(error.message);
       setPendingUsers([]);
     } else {
@@ -111,7 +111,7 @@ export default function AdminDashboard() {
   async function loadNotes() {
     const { data, error } = await supabase
       .from("notes")
-      .select("id, title, category")
+      .select("id, title, subject, semester")
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -122,37 +122,15 @@ export default function AdminDashboard() {
     }
   }
 
-  // ----------------- APPROVE USERS -----------------
-
-  async function handleApprove(profileId: string, makeAdmin: boolean) {
-    setUsersError(null);
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        status: "active",
-        role: makeAdmin ? "admin" : "user",
-      })
-      .eq("id", profileId);
-
-    if (error) {
-      console.error("Error approving user", error);
-      setUsersError(error.message);
-      return;
-    }
-
-    await loadPendingUsers();
-  }
-
-  // ----------------- CREATE NOTE (NEW) -----------------
+  // ----------------- CREATE NOTE -----------------
 
   async function handleCreateNote(e: React.FormEvent) {
     e.preventDefault();
     setCreateNoteError(null);
     setCreateNoteMessage(null);
 
-    if (!newNoteTitle.trim()) {
-      setCreateNoteError("Please enter a note title.");
+    if (!newTitle.trim()) {
+      setCreateNoteError("Please enter a title.");
       return;
     }
 
@@ -161,10 +139,11 @@ export default function AdminDashboard() {
       const { data, error } = await supabase
         .from("notes")
         .insert({
-          title: newNoteTitle.trim(),
-          category: newNoteCategory.trim() || null,
+          title: newTitle.trim(),
+          subject: newSubject.trim() || null,
+          semester: newSemester.trim() || null,
         })
-        .select("id, title, category")
+        .select("id, title, subject, semester")
         .single();
 
       if (error) {
@@ -173,10 +152,10 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Add the new note into local list + reset form
       setNotes((prev) => [...prev, data as Note]);
-      setNewNoteTitle("");
-      setNewNoteCategory("");
+      setNewTitle("");
+      setNewSubject("");
+      setNewSemester("");
       setCreateNoteMessage("Note created successfully.");
     } finally {
       setCreateNoteLoading(false);
@@ -202,7 +181,6 @@ export default function AdminDashboard() {
     setUploadLoading(true);
 
     try {
-      // 1) Upload the file to the storage bucket
       const bucket = "protected-files"; // must match your Supabase bucket name
       const path = `note-${selectedNoteId}/${Date.now()}-${file.name}`;
 
@@ -217,7 +195,6 @@ export default function AdminDashboard() {
         return;
       }
 
-      // 2) Insert row into attachments table
       const { error: insertError } = await supabase.from("attachments").insert({
         note_id: selectedNoteId,
         name: file.name,
@@ -252,11 +229,11 @@ export default function AdminDashboard() {
               Admin console
             </p>
             <h1 className="text-xl font-semibold text-slate-900">
-              SecureNotes administration
+              Manage notes and users
             </h1>
             <p className="mt-1 text-sm text-slate-600 max-w-xl">
-              Approve new accounts and manage protected notes. You can create
-              notes and attach PDFs/images which appear in the secure viewer.
+              Create subject/semester-based notes and upload PDFs so your
+              friends can access everything from one place.
             </p>
           </div>
           <div className="text-xs text-right text-slate-500">
@@ -267,14 +244,14 @@ export default function AdminDashboard() {
         </section>
 
         <section className="grid gap-6 md:grid-cols-2 items-start">
-          {/* PENDING USERS */}
+          {/* USERS (info only now) */}
           <div className="glass-card p-5">
             <h2 className="text-sm font-semibold text-slate-900">
-              Pending users
+              Registered users
             </h2>
             <p className="mt-1 text-xs text-slate-500">
-              New sign-ups appear here as <code>pending</code>. Approve them to
-              allow login, or promote to admin.
+              Everyone who has created an account. New users can sign up and
+              are active immediately.
             </p>
 
             {loadingUsers && (
@@ -289,11 +266,11 @@ export default function AdminDashboard() {
 
             {!loadingUsers && pendingUsers.length === 0 && !usersError && (
               <p className="mt-4 text-xs text-slate-500">
-                No pending users right now.
+                No users yet. Share the site link so your friends can register.
               </p>
             )}
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3 max-h-72 overflow-auto pr-1">
               {pendingUsers.map((p) => (
                 <div
                   key={p.id}
@@ -304,30 +281,16 @@ export default function AdminDashboard() {
                       {p.name || "(no name)"}
                     </div>
                     <div className="text-xs text-slate-500">{p.email}</div>
-                    <div className="mt-1 text-[11px] text-amber-600">
-                      Status: {p.status || "unknown"}
+                    <div className="mt-1 text-[11px] text-slate-400">
+                      Role: {p.role || "user"} · Status: {p.status || "active"}
                     </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <button
-                      onClick={() => handleApprove(p.id, false)}
-                      className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                    >
-                      Approve user
-                    </button>
-                    <button
-                      onClick={() => handleApprove(p.id, true)}
-                      className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
-                    >
-                      Approve as admin
-                    </button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* NOTE MANAGEMENT: create + upload */}
+          {/* NOTE MANAGEMENT */}
           <div className="glass-card p-5 space-y-6">
             {/* Create note */}
             <div>
@@ -335,8 +298,8 @@ export default function AdminDashboard() {
                 Create note
               </h2>
               <p className="mt-1 text-xs text-slate-500">
-                Create a new note record. After that, you can attach PDFs or
-                images to it using the upload section below.
+                Add a note for a specific subject and semester. Then upload
+                PDFs or images to it.
               </p>
 
               <form onSubmit={handleCreateNote} className="mt-3 space-y-3">
@@ -346,24 +309,38 @@ export default function AdminDashboard() {
                   </label>
                   <input
                     type="text"
-                    value={newNoteTitle}
-                    onChange={(e) => setNewNoteTitle(e.target.value)}
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
                     className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Example: Quarterly Security Update"
+                    placeholder="DBMS Unit 1 Notes"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Category (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={newNoteCategory}
-                    onChange={(e) => setNewNoteCategory(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Security, HR, Compliance…"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">
+                      Subject
+                    </label>
+                    <input
+                      type="text"
+                      value={newSubject}
+                      onChange={(e) => setNewSubject(e.target.value)}
+                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="DBMS, OOP, CN..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">
+                      Semester
+                    </label>
+                    <input
+                      type="text"
+                      value={newSemester}
+                      onChange={(e) => setNewSemester(e.target.value)}
+                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="3rd Sem, 5th Sem..."
+                    />
+                  </div>
                 </div>
 
                 {createNoteError && (
@@ -394,13 +371,11 @@ export default function AdminDashboard() {
                 Upload PDF / image
               </h2>
               <p className="mt-1 text-xs text-slate-500">
-                Upload a file into the <code>protected-files</code> storage
-                bucket and link it to a note. Files will show up in the secure
-                viewer page.
+                Choose a note and attach PDFs (notes, assignments, journals) or
+                images. They will show in the note viewer.
               </p>
 
               <form onSubmit={handleUpload} className="mt-4 space-y-4">
-                {/* Note select */}
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">
                     Choose note
@@ -414,13 +389,13 @@ export default function AdminDashboard() {
                     {notes.map((n) => (
                       <option key={n.id} value={n.id}>
                         {n.title || `Note ${n.id}`}
-                        {n.category ? ` · ${n.category}` : ""}
+                        {n.subject ? ` · ${n.subject}` : ""}
+                        {n.semester ? ` · ${n.semester}` : ""}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {/* File input */}
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">
                     File (PDF or image)
@@ -455,9 +430,8 @@ export default function AdminDashboard() {
               </form>
 
               <p className="mt-3 text-[11px] text-slate-400">
-                Tip: after uploading, open the corresponding note from the user
-                dashboard. It will use the attachments table to show PDFs/images
-                in the secure viewer.
+                Tip: after uploading, open the note from the user dashboard.
+                Your friends will see attached files under that note.
               </p>
             </div>
           </div>

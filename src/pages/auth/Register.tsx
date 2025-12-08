@@ -29,20 +29,20 @@ const Register: React.FC = () => {
       return;
     }
 
-    // Optional: create a profile row with "pending" status
+    // Create / update profile row and mark as active immediately
     if (data?.user?.id) {
       await supabase.from("profiles").upsert({
         id: data.user.id,
         email,
         name,
         role: "user",
-        status: "pending", // admin will change to "active"
+        status: "active", // no more pending state
       });
     }
 
     setLoading(false);
     alert(
-      "Account created. Check your email to confirm. Access will remain pending until an admin approves you."
+      "Account created. Check your email to verify, then sign in to view notes."
     );
     nav("/login");
   }
@@ -50,7 +50,7 @@ const Register: React.FC = () => {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-sky-50 to-slate-100 px-4">
       <div className="max-w-5xl w-full grid md:grid-cols-2 bg-white/80 shadow-xl rounded-2xl overflow-hidden border border-slate-100 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5">
-        {/* Left: welcome / marketing panel */}
+        {/* Left panel */}
         <section className="hidden md:flex flex-col justify-between bg-gradient-to-br from-blue-600 via-indigo-500 to-emerald-400 text-white p-8">
           <div>
             <p className="text-xs font-semibold tracking-[0.2em] uppercase opacity-80">
@@ -60,27 +60,25 @@ const Register: React.FC = () => {
               Create your account ✨
             </h1>
             <p className="mt-3 text-sm text-blue-50 leading-relaxed">
-              Request access to view high-sensitivity documents in a protected,
-              read-only viewer. Every read is logged, and downloads are blocked
-              where possible.
+              Sign up once and access all uploaded notes, assignments, and
+              journals for your class from one dashboard.
             </p>
           </div>
 
           <ul className="mt-6 space-y-2 text-xs text-blue-50/90">
-            <li>• Admins must approve new accounts before access is granted</li>
-            <li>• Views are watermarked with your identity + timestamp</li>
-            <li>• No copy-paste or downloads where protections are supported</li>
+            <li>• Login from any device with a browser</li>
+            <li>• Subject-wise and semester-wise PDFs</li>
+            <li>• No more searching chats for old notes</li>
           </ul>
         </section>
 
-        {/* Right: form panel */}
+        {/* Right: form */}
         <section className="p-8 md:p-10">
           <h2 className="text-xl font-semibold text-slate-900 mb-1">
             Create account
           </h2>
           <p className="text-sm text-slate-500 mb-6">
-            Your account will be reviewed by an administrator before access is
-            granted.
+            Use your college email or any email you regularly check.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -108,7 +106,7 @@ const Register: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
-                placeholder="you@company.com"
+                placeholder="you@college.com"
               />
             </div>
 
@@ -152,7 +150,7 @@ const Register: React.FC = () => {
               </Link>
             </span>
             <span className="text-slate-400">
-              Need help? Contact your administrator.
+              Having issues? Try again or contact the site owner.
             </span>
           </div>
         </section>
