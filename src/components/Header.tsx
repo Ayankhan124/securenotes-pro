@@ -1,44 +1,56 @@
-import React, { useState } from "react";
+// src/components/Header.tsx
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useState, useMemo } from "react";
 
 export default function Header() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [avatarError, setAvatarError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const nav = useNavigate();
 
-  const displayName =
-    (user?.user_metadata as any)?.name ||
+  // ---- derived data ----------------------------------------------------
+  const metadata = (user?.user_metadata || {}) as Record<string, any>;
+
+  const displayName: string =
+    metadata.name ||
+    metadata.full_name ||
+    metadata.user_name ||
     user?.email?.split("@")[0] ||
-    "Account";
+    "Student";
 
-  const avatarUrl =
-    (user?.user_metadata as any)?.avatar_url ||
-    (user?.user_metadata as any)?.picture ||
-    "";
+  const rawAvatar: string | undefined =
+    metadata.avatar_url || metadata.picture || metadata.image;
 
-  const email = user?.email || "";
-  const phone =
-    (user as any)?.phone ||
-    (user?.user_metadata as any)?.phone ||
-    (user?.user_metadata as any)?.phone_number ||
-    "";
+  const avatarUrl = !avatarError && rawAvatar ? String(rawAvatar) : null;
+
+  const initials = useMemo(() => {
+    const parts = displayName.trim().split(" ");
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }, [displayName]);
+
+  const emailOrPhone: string | undefined =
+    metadata.email || user?.email || metadata.phone || metadata.phone_number;
 
   async function handleSignOut() {
     await signOut();
-    setMenuOpen(false);
-    nav("/");
+    navigate("/");
   }
 
+  // routes where header is still shown but we hide auth buttons
+  const isLoggedIn = !!user;
+
+  // ----------------------------------------------------------------------
   return (
-    <header className="relative z-40 w-full border-b border-slate-100 bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand */}
-        <Link to="/" className="flex items-center gap-2 min-w-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white shadow-sm">
             SN
           </div>
-          <div className="leading-tight hidden xs:block">
+          <div className="leading-tight">
             <div className="text-sm font-semibold text-slate-900">
               SecureNotes Pro
             </div>
@@ -46,127 +58,121 @@ export default function Header() {
           </div>
         </Link>
 
-        {/* Nav links + account */}
-        <div className="flex items-center gap-3 text-xs sm:text-sm">
-          <nav className="hidden sm:flex items-center gap-4">
+        {/* Desktop nav */}
+        <nav className="hidden items-center gap-6 text-sm text-slate-600 sm:flex">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              (isActive ? "text-slate-900" : "text-slate-500") +
+              " hover:text-slate-900"
+            }
+          >
+            Home
+          </NavLink>
+          <NavLink
+            to="/about"
+            className={({ isActive }) =>
+              (isActive ? "text-slate-900" : "text-slate-500") +
+              " hover:text-slate-900"
+            }
+          >
+            About
+          </NavLink>
+
+          {isLoggedIn && (
             <NavLink
-              to="/"
+              to="/dashboard"
               className={({ isActive }) =>
                 (isActive ? "text-slate-900" : "text-slate-500") +
                 " hover:text-slate-900"
               }
             >
-              Home
+              Dashboard
             </NavLink>
+          )}
 
+          {isLoggedIn && (
             <NavLink
-              to="/about"
+              to="/admin/dashboard"
               className={({ isActive }) =>
                 (isActive ? "text-slate-900" : "text-slate-500") +
                 " hover:text-slate-900"
               }
             >
-              About
+              Admin
             </NavLink>
+          )}
 
-            {user && (
+          {/* Right side: auth area */}
+          {!isLoggedIn && (
+            <div className="flex items-center gap-3">
               <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                  (isActive ? "text-slate-900" : "text-slate-500") +
-                  " hover:text-slate-900"
-                }
-              >
-                Dashboard
-              </NavLink>
-            )}
-
-            {user && (
-              <NavLink
-                to="/admin/dashboard"
-                className={({ isActive }) =>
-                  (isActive ? "text-slate-900" : "text-slate-500") +
-                  " hover:text-slate-900"
-                }
-              >
-                Admin
-              </NavLink>
-            )}
-          </nav>
-
-          {/* When logged OUT */}
-          {!user && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => nav("/login")}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50"
+                to="/login"
+                className="text-slate-500 hover:text-slate-900"
               >
                 Sign in
-              </button>
-              <button
-                onClick={() => nav("/register")}
-                className="hidden sm:inline-flex rounded-md bg-indigo-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm hover:bg-indigo-700"
-              >
-                Create account
-              </button>
+              </NavLink>
+              <Link to="/register">
+                <button className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-slate-800 shadow-sm hover:border-indigo-300 hover:text-indigo-700">
+                  Create account
+                </button>
+              </Link>
             </div>
           )}
 
-          {/* When logged IN */}
-          {user && (
+          {isLoggedIn && (
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] shadow-sm hover:border-slate-300"
+                onClick={() => setMenuOpen((o) => !o)}
+                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-xs shadow-sm hover:border-indigo-300"
               >
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={displayName}
-                    className="h-7 w-7 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-semibold text-white">
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <span className="hidden sm:inline text-[12px] text-slate-800 max-w-[120px] truncate">
+                <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-[11px] font-semibold text-white">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="h-full w-full object-cover"
+                      onError={() => setAvatarError(true)}
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <span className="max-w-[120px] truncate text-slate-800">
                   {displayName}
                 </span>
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-lg border border-slate-100 bg-white p-3 text-xs shadow-lg z-50">
-                  <div className="mb-2 border-b border-slate-100 pb-2">
-                    <div className="text-[11px] font-semibold text-slate-500">
-                      Signed in as
+                <div className="absolute right-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-2 text-xs shadow-lg">
+                  <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
+                    <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-[11px] font-semibold text-white">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={displayName}
+                          className="h-full w-full object-cover"
+                          onError={() => setAvatarError(true)}
+                        />
+                      ) : (
+                        initials
+                      )}
                     </div>
-                    {email && (
-                      <div className="truncate text-[12px] text-slate-800">
-                        {email}
-                      </div>
-                    )}
-                    {phone && (
-                      <div className="mt-0.5 text-[11px] text-slate-500">
-                        {phone}
-                      </div>
-                    )}
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-900">
+                        {displayName}
+                      </p>
+                      {emailOrPhone && (
+                        <p className="truncate text-[11px] text-slate-500">
+                          {emailOrPhone}
+                        </p>
+                      )}
+                    </div>
                   </div>
-
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      nav("/dashboard");
-                    }}
-                    className="block w-full rounded-md px-2 py-1 text-left text-[12px] text-slate-700 hover:bg-slate-50"
-                  >
-                    My notes dashboard
-                  </button>
-
                   <button
                     onClick={handleSignOut}
-                    className="mt-2 block w-full rounded-md bg-rose-50 px-2 py-1 text-left text-[12px] font-medium text-rose-700 hover:bg-rose-100"
+                    className="mt-1 w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-medium text-red-600 hover:bg-red-50"
                   >
                     Sign out
                   </button>
@@ -174,8 +180,75 @@ export default function Header() {
               )}
             </div>
           )}
+        </nav>
+
+        {/* Mobile: avatar only */}
+        <div className="flex items-center gap-2 sm:hidden">
+          {isLoggedIn ? (
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 shadow-sm"
+            >
+              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-semibold text-white">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
+                    onError={() => setAvatarError(true)}
+                  />
+                ) : (
+                  initials
+                )}
+              </div>
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm"
+            >
+              Sign in
+            </Link>
+          )}
+
+          {menuOpen && isLoggedIn && (
+            <div className="absolute right-4 top-14 w-56 rounded-xl border border-slate-200 bg-white p-2 text-xs shadow-lg sm:hidden">
+              <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
+                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-semibold text-white">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="h-full w-full object-cover"
+                      onError={() => setAvatarError(true)}
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-slate-900">
+                    {displayName}
+                  </p>
+                  {emailOrPhone && (
+                    <p className="truncate text-[11px] text-slate-500">
+                      {emailOrPhone}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={handleSignOut}
+                className="mt-1 w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-medium text-red-600 hover:bg-red-50"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
   );
-}
+      }
