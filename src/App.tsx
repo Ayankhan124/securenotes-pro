@@ -11,6 +11,7 @@ import ProtectedRoute from "./lib/ProtectedRoute";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import SecureNoteViewer from "./pages/user/SecureNoteViewer";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 function App() {
   const location = useLocation();
@@ -45,6 +46,15 @@ function App() {
             </ProtectedRoute>
           }
         />
+              {/* Protected (admin console) */}
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
 
         {/* Fallback */}
         <Route path="*" element={<NotFound />} />

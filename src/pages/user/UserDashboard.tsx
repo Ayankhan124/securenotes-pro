@@ -37,10 +37,10 @@ export default function UserDashboard() {
   const { user } = useAuth();
 
   return (
-    <main className="page-shell bg-slate-50/60">
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-        {/* top row: greeting + security summary */}
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start">
+    <main className="page-shell">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 space-y-6">
+        {/* Top row: greeting + session card */}
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start fade-in-up">
           <section className="glass-card p-6">
             <p className="text-xs uppercase tracking-wide text-slate-400">
               Welcome back
@@ -49,8 +49,8 @@ export default function UserDashboard() {
               {user?.user_metadata?.name || user?.email}
             </h1>
             <p className="mt-2 text-sm text-slate-600">
-              Your dashboard lists every note you have access to. Content is
-              protected — watermarked and read-only inside the secure viewer.
+              Your dashboard lists every note you have access to. Content is protected —
+              watermarked and read-only inside the secure viewer.
             </p>
           </section>
 
@@ -72,13 +72,12 @@ export default function UserDashboard() {
           </aside>
         </div>
 
-        {/* notes list */}
-        <section className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start">
+        {/* Notes row */}
+        <section className="grid gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start fade-in-up">
+          {/* Notes list */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-900">
-                Your Notes
-              </h2>
+              <h2 className="text-sm font-semibold text-slate-900">Your Notes</h2>
               <p className="text-xs text-slate-500">
                 Click a note to open it in secure view.
               </p>
@@ -87,23 +86,20 @@ export default function UserDashboard() {
             <div className="space-y-3">
               {mockNotes.map((note) => (
                 <Link key={note.id} to={`/notes/${note.id}`}>
-                  <article
-  className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3
-             transition-all duration-200 ease-out
-             hover:-translate-y-1 hover:shadow-xl hover:border-indigo-300"
->
+                  <article className="note-card flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-medium text-slate-900 truncate">
+                      <h3 className="truncate text-sm font-medium text-slate-900">
                         {note.title}
                       </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="mt-0.5 text-xs text-slate-500">
                         {note.category} · Updated {note.updatedAt}
                       </p>
                     </div>
+
                     <div className="flex flex-col items-end gap-1">
                       <span
                         className={
-                          "badge-pill text-[10px] border " +
+                          "badge-pill border " +
                           (note.sensitivity === "high"
                             ? "bg-red-50 text-red-700 border-red-100"
                             : note.sensitivity === "medium"
@@ -127,10 +123,10 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* right column: small info panel */}
+          {/* Info sidebar */}
           <aside className="space-y-3">
             <div className="glass-card p-4 text-xs text-slate-600">
-              <h3 className="text-sm font-semibold mb-2">
+              <h3 className="mb-2 text-sm font-semibold">
                 How secure viewing works
               </h3>
               <ul className="list-disc list-inside space-y-1">
@@ -141,12 +137,12 @@ export default function UserDashboard() {
             </div>
 
             <div className="glass-card p-4 text-xs text-slate-600">
-              <h3 className="text-sm font-semibold mb-2">
+              <h3 className="mb-2 text-sm font-semibold">
                 Need access to more notes?
               </h3>
               <p>
-                Contact your administrator if you believe you should see
-                additional documents or categories.
+                Contact your administrator if you believe you should see additional
+                documents or categories.
               </p>
             </div>
           </aside>

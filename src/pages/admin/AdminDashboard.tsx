@@ -1,250 +1,350 @@
-import React, { JSX, useEffect, useState } from "react";
-import { supabase } from "../../api/supabaseClient";
-import { uploadNoteFile } from "../../api/storageClient";
+// src/pages/admin/AdminDashboard.tsx
 
-type AttachmentRow = {
+import { useEffect, useState } from "react";
+import { supabase } from "../../api/supabaseClient";
+import { useAuth } from "../../lib/auth";
+
+// TODO: change this to YOUR real admin email
+const ADMIN_EMAILS = ["ayankhan4024@gmail.com"];
+
+type Profile = {
   id: string;
-  note_id: string;
-  name: string;
-  path: string;
-  mime_type: string;
-  created_at: string;
+  email: string | null;
+  name: string | null;
+  role: string | null;
+  status: string | null;
 };
 
-export default function AdminDashboard(): JSX.Element {
-  const [noteId, setNoteId] = useState<string>("");
-  const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+type Note = {
+  id: string;
+  title: string | null;
+};
 
-  // Load attachments for the current noteId
-  async function loadAttachments(targetId: string) {
-    if (!targetId) {
-      setAttachments([]);
-      return;
-    }
+export default function AdminDashboard() {
+  const { user } = useAuth();
 
-    setIsLoading(true);
+  const [pendingUsers, setPendingUsers] = useState<Profile[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [usersError, setUsersError] = useState<string | null>(null);
+
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [selectedNoteId, setSelectedNoteId] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+
+  const isAdmin =
+    !!user && ADMIN_EMAILS.includes((user.email || "").toLowerCase());
+
+  // --- Guard: only allow configured admin emails ---
+  if (!user) {
+    return (
+      <main className="page-shell min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-sm text-slate-600">
+          You must be signed in to view this page.
+        </p>
+      </main>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <main className="page-shell min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="rounded-xl bg-white shadow-sm border border-slate-200 px-6 py-4 text-center">
+          <h1 className="text-base font-semibold text-slate-900">
+            Admin access only
+          </h1>
+          <p className="mt-2 text-sm text-slate-600 max-w-sm">
+            Your account is signed in as <strong>{user.email}</strong>, which is
+            not listed as an admin email.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  // ----------------- LOAD DATA -----------------
+
+  useEffect(() => {
+    loadPendingUsers();
+    loadNotes();
+  }, []);
+
+  async function loadPendingUsers() {
+    setLoadingUsers(true);
+    setUsersError(null);
+
     const { data, error } = await supabase
-      .from("attachments")
-      .select("*")
-      .eq("note_id", targetId)
-      .order("created_at", { ascending: false });
+      .from("profiles")
+      .select("id, email, name, role, status")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("Error loading attachments", error);
-      alert("Could not load attachments: " + error.message);
-      setIsLoading(false);
-      return;
+      console.error("Error loading pending users", error);
+      setUsersError(error.message);
+      setPendingUsers([]);
+    } else {
+      setPendingUsers(data || []);
     }
 
-    setAttachments(data ?? []);
-    setIsLoading(false);
+    setLoadingUsers(false);
   }
 
-  // When noteId changes, reload attachments
-  useEffect(() => {
-    if (noteId) {
-      void loadAttachments(noteId);
-    } else {
-      setAttachments([]);
-    }
-  }, [noteId]);
+  async function loadNotes() {
+    const { data, error } = await supabase
+      .from("notes")
+      .select("id, title")
+      .order("created_at", { ascending: true });
 
-  async function handleFileChange(
-    e: React.ChangeEvent<HTMLInputElement>
-  ): Promise<void> {
-    if (!e.target.files?.length) return;
-    if (!noteId) {
-      alert("Enter a Note ID first (it must match the /notes/:id value).");
+    if (error) {
+      console.error("Error loading notes", error);
+      setNotes([]);
+    } else {
+      setNotes(data || []);
+    }
+  }
+
+  // ----------------- APPROVE USERS -----------------
+
+  async function handleApprove(profileId: string, makeAdmin: boolean) {
+    setUsersError(null);
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        status: "active",
+        role: makeAdmin ? "admin" : "user",
+      })
+      .eq("id", profileId);
+
+    if (error) {
+      console.error("Error approving user", error);
+      setUsersError(error.message);
       return;
     }
 
-    setIsUploading(true);
+    await loadPendingUsers();
+  }
+
+  // ----------------- UPLOAD ATTACHMENTS -----------------
+
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault();
+    setUploadError(null);
+    setUploadMessage(null);
+
+    if (!selectedNoteId) {
+      setUploadError("Please choose a note first.");
+      return;
+    }
+    if (!file) {
+      setUploadError("Please choose a file (PDF or image).");
+      return;
+    }
+
+    setUploadLoading(true);
 
     try {
-      const files = Array.from(e.target.files);
+      // 1) Upload the file to the storage bucket
+      const bucket = "protected-files"; // must match your Supabase bucket name
+      const path = `note-${selectedNoteId}/${Date.now()}-${file.name}`;
 
-      for (const file of files) {
-        // 1) Upload to Supabase Storage
-        const path = await uploadNoteFile(file, noteId);
-        if (!path) continue;
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, file);
 
-        // 2) Save metadata in attachments table
-        const { error } = await supabase.from("attachments").insert({
-          note_id: noteId,
-          name: file.name,
-          path,
-          mime_type: file.type,
-        });
-
-        if (error) {
-          console.error("Insert attachment error", error);
-          alert("Error saving attachment metadata: " + error.message);
-        }
+      if (uploadError) {
+        console.error("Upload error", uploadError);
+        setUploadError(uploadError.message);
+        setUploadLoading(false);
+        return;
       }
 
-      // reload list
-      await loadAttachments(noteId);
+      // 2) Insert row into attachments table
+      const { error: insertError } = await supabase.from("attachments").insert({
+        note_id: selectedNoteId,
+        name: file.name,
+        path,
+        mime_type: file.type || "application/octet-stream",
+      });
+
+      if (insertError) {
+        console.error("Insert attachment error", insertError);
+        setUploadError(insertError.message);
+        setUploadLoading(false);
+        return;
+      }
+
+      setUploadMessage("File uploaded and attached to the note.");
+      setFile(null);
+      setSelectedNoteId("");
     } finally {
-      setIsUploading(false);
-      e.target.value = "";
+      setUploadLoading(false);
     }
   }
 
+  // ----------------- UI -----------------
+
   return (
-    <main className="page-shell min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
+    <main className="page-shell min-h-screen bg-slate-50/60">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {/* Heading */}
+        <section className="glass-card p-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-sm font-semibold text-slate-900">
-              SecureNotes Pro
-            </div>
-            <div className="text-xs text-slate-500">
-              Admin dashboard – note & file management
-            </div>
+            <p className="text-xs uppercase tracking-wide text-indigo-500">
+              Admin console
+            </p>
+            <h1 className="text-xl font-semibold text-slate-900">
+              SecureNotes administration
+            </h1>
+            <p className="mt-1 text-sm text-slate-600 max-w-xl">
+              Approve new accounts and attach PDFs/images to notes. All changes
+              are enforced by Row Level Security in Supabase.
+            </p>
           </div>
+          <div className="text-xs text-right text-slate-500">
+            <div>Signed in as</div>
+            <div className="font-medium text-slate-800">{user.email}</div>
+            <div className="text-emerald-600 font-medium">Admin</div>
+          </div>
+        </section>
 
-          {/* you can add a real sign-out later */}
-          <button
-            className="px-3 py-1 rounded-md text-xs font-medium bg-slate-900 text-white hover:bg-slate-800"
-            onClick={() => alert("Hook this up to your sign-out logic")}
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
-
-      <section className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-        {/* Simple stats card */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="text-xs text-slate-500">Total notes</div>
-            <div className="mt-1 text-2xl font-semibold text-slate-900">
-              1
-            </div>
+        <section className="grid gap-6 md:grid-cols-2 items-start">
+          {/* PENDING USERS */}
+          <div className="glass-card p-5">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Pending users
+            </h2>
             <p className="mt-1 text-xs text-slate-500">
-              (You can wire this to a real notes table later.)
+              New sign-ups appear here as <code>pending</code>. Approve them to
+              allow login, or promote to admin.
             </p>
-          </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="text-xs text-slate-500">File attachments</div>
-            <div className="mt-1 text-2xl font-semibold text-slate-900">
-              {attachments.length}
-            </div>
-            <p className="mt-1 text-xs text-slate-500">
-              For the selected note below.
-            </p>
-          </div>
+            {loadingUsers && (
+              <p className="mt-4 text-xs text-slate-500">Loading users…</p>
+            )}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="text-xs text-slate-500">Status</div>
-            <div className="mt-1 text-sm font-medium text-emerald-600">
-              Storage configured
-            </div>
-            <p className="mt-1 text-xs text-slate-500">
-              Files are uploaded to the private Supabase bucket.
-            </p>
-          </div>
-        </div>
-
-        {/* Attachments panel */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">
-            Attach files to a note
-          </h2>
-          <p className="mt-1 text-xs text-slate-500">
-            The <span className="font-mono text-[11px]">note_id</span> must
-            match the value used in your URL{" "}
-            <span className="font-mono text-[11px]">/notes/:id</span>.
-            For example, if the user opens{" "}
-            <span className="font-mono text-[11px]">
-              /notes/sample-note-1
-            </span>
-            , enter <span className="font-mono text-[11px]">
-              sample-note-1
-            </span>{" "}
-            below.
-          </p>
-
-          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                Note ID
-              </label>
-              <input
-                type="text"
-                value={noteId}
-                onChange={(e) => setNoteId(e.target.value.trim())}
-                placeholder="e.g. 1 or sample-note-1"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                Upload PDFs / images
-              </label>
-              <input
-                type="file"
-                multiple
-                accept="application/pdf,image/*"
-                onChange={handleFileChange}
-                className="text-xs"
-              />
-            </div>
-          </div>
-
-          {isUploading && (
-            <p className="mt-2 text-xs text-slate-500">
-              Uploading files…
-            </p>
-          )}
-
-          <div className="mt-4 border-t border-slate-100 pt-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-slate-700">
-                Existing attachments
-              </h3>
-              {isLoading && (
-                <span className="text-[11px] text-slate-400">
-                  Loading…
-                </span>
-              )}
-            </div>
-
-            {attachments.length === 0 && !isLoading && (
-              <p className="mt-2 text-xs text-slate-500">
-                No files yet for this note.
+            {usersError && (
+              <p className="mt-3 text-xs text-red-500 bg-red-50 border border-red-100 rounded px-3 py-2">
+                {usersError}
               </p>
             )}
 
-            {attachments.length > 0 && (
-              <ul className="mt-2 space-y-1 text-xs text-slate-600">
-                {attachments.map((att) => (
-                  <li
-                    key={att.id}
-                    className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2"
-                  >
-                    <div>
-                      <div className="font-medium text-slate-800">
-                        {att.name}
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        {att.mime_type}
-                      </div>
-                    </div>
-                    <div className="text-[11px] text-slate-400">
-                      {new Date(att.created_at).toLocaleString()}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+            {!loadingUsers && pendingUsers.length === 0 && !usersError && (
+              <p className="mt-4 text-xs text-slate-500">
+                No pending users right now.
+              </p>
             )}
+
+            <div className="mt-4 space-y-3">
+              {pendingUsers.map((p) => (
+                <div
+                  key={p.id}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 flex items-center justify-between gap-3"
+                >
+                  <div>
+                    <div className="text-sm font-medium text-slate-900">
+                      {p.name || "(no name)"}
+                    </div>
+                    <div className="text-xs text-slate-500">{p.email}</div>
+                    <div className="mt-1 text-[11px] text-amber-600">
+                      Status: {p.status || "unknown"}
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={() => handleApprove(p.id, false)}
+                      className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Approve user
+                    </button>
+                    <button
+                      onClick={() => handleApprove(p.id, true)}
+                      className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                    >
+                      Approve as admin
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+
+          {/* UPLOAD ATTACHMENTS */}
+          <div className="glass-card p-5">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Upload PDF / image
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Upload a file into the <code>protected-files</code> storage bucket
+              and link it to a note. Files will show up in the secure viewer
+              page.
+            </p>
+
+            <form onSubmit={handleUpload} className="mt-4 space-y-4">
+              {/* Note select */}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Choose note
+                </label>
+                <select
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  value={selectedNoteId}
+                  onChange={(e) => setSelectedNoteId(e.target.value)}
+                >
+                  <option value="">Select a note…</option>
+                  {notes.map((n) => (
+                    <option key={n.id} value={n.id}>
+                      {n.title || `Note ${n.id}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* File input */}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  File (PDF or image)
+                </label>
+                <input
+                  type="file"
+                  accept="application/pdf,image/*"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+                />
+              </div>
+
+              {uploadError && (
+                <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded px-3 py-2">
+                  {uploadError}
+                </p>
+              )}
+
+              {uploadMessage && (
+                <p className="text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-3 py-2">
+                  {uploadMessage}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={uploadLoading}
+                className="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {uploadLoading ? "Uploading…" : "Upload and attach"}
+              </button>
+            </form>
+
+            <p className="mt-3 text-[11px] text-slate-400">
+              Tip: after uploading, open a note from the user dashboard. It will
+              use the attachments table to show PDFs/images in the secure
+              viewer.
+            </p>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

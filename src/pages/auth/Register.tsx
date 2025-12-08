@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { supabase } from "../../api/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
+import { supabase } from "../../api/supabaseClient";
 
 const Register: React.FC = () => {
   const nav = useNavigate();
@@ -18,7 +18,9 @@ const Register: React.FC = () => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: {
+        data: { name },
+      },
     });
 
     if (error) {
@@ -27,51 +29,52 @@ const Register: React.FC = () => {
       return;
     }
 
-    // create / update profile row
+    // Optional: create a profile row with "pending" status
     if (data?.user?.id) {
       await supabase.from("profiles").upsert({
         id: data.user.id,
         email,
         name,
         role: "user",
-        status: "pending", // admin will set to active
+        status: "pending", // admin will change to "active"
       });
     }
 
     setLoading(false);
     alert(
-      "Account requested. An administrator will review and activate your access."
+      "Account created. Check your email to confirm. Access will remain pending until an admin approves you."
     );
     nav("/login");
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-sky-50 to-slate-100 px-4">
-      <div className="max-w-5xl w-full grid md:grid-cols-2 bg-white/80 shadow-xl rounded-2xl overflow-hidden border border-slate-100">
-        {/* Left panel – same style as login, different text */}
-        <div className="hidden md:flex flex-col justify-between bg-gradient-to-br from-blue-600 via-indigo-500 to-emerald-400 text-white p-8">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-sky-50 to-slate-100 px-4">
+      <div className="max-w-5xl w-full grid md:grid-cols-2 bg-white/80 shadow-xl rounded-2xl overflow-hidden border border-slate-100 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5">
+        {/* Left: welcome / marketing panel */}
+        <section className="hidden md:flex flex-col justify-between bg-gradient-to-br from-blue-600 via-indigo-500 to-emerald-400 text-white p-8">
           <div>
             <p className="text-xs font-semibold tracking-[0.2em] uppercase opacity-80">
-              SECURENOTES PRO
+              SecureNotes Pro
             </p>
             <h1 className="mt-4 text-2xl font-semibold">
               Create your account ✨
             </h1>
             <p className="mt-3 text-sm text-blue-50 leading-relaxed">
-              Request access to view protected notes. Your account will be
-              reviewed by an administrator before access is granted.
+              Request access to view high-sensitivity documents in a protected,
+              read-only viewer. Every read is logged, and downloads are blocked
+              where possible.
             </p>
           </div>
 
           <ul className="mt-6 space-y-2 text-xs text-blue-50/90">
-            <li>• Designed for high-sensitivity content</li>
-            <li>• Read-only, watermarked viewing</li>
-            <li>• Every open is logged for compliance</li>
+            <li>• Admins must approve new accounts before access is granted</li>
+            <li>• Views are watermarked with your identity + timestamp</li>
+            <li>• No copy-paste or downloads where protections are supported</li>
           </ul>
-        </div>
+        </section>
 
-        {/* Right panel – form */}
-        <div className="p-8 md:p-10">
+        {/* Right: form panel */}
+        <section className="p-8 md:p-10">
           <h2 className="text-xl font-semibold text-slate-900 mb-1">
             Create account
           </h2>
@@ -90,8 +93,8 @@ const Register: React.FC = () => {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-                placeholder="Ayaan Khan"
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                placeholder="Ayyan Khan"
               />
             </div>
 
@@ -104,7 +107,7 @@ const Register: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
                 placeholder="you@company.com"
               />
             </div>
@@ -118,7 +121,7 @@ const Register: React.FC = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
                 placeholder="••••••••"
               />
             </div>
@@ -132,13 +135,13 @@ const Register: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
+              className="w-full py-2.5 rounded-md bg-indigo-600 text-white text-sm font-medium shadow-sm hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? "Creating account…" : "Create account"}
+              {loading ? "Creating account..." : "Create account"}
             </button>
           </form>
 
-          <div className="mt-6 text-xs text-slate-500 flex justify-between">
+          <div className="mt-6 text-xs text-slate-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <span>
               Already have an account?{" "}
               <Link
@@ -148,10 +151,13 @@ const Register: React.FC = () => {
                 Sign in
               </Link>
             </span>
+            <span className="text-slate-400">
+              Need help? Contact your administrator.
+            </span>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 

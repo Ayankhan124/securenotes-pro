@@ -5,12 +5,19 @@ import { useAuth } from "../../lib/auth";
 
 const UserLogin: React.FC = () => {
   const nav = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      nav("/dashboard", { replace: true });
+    }
+  }, [authLoading, user, nav]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
 
   // If already logged in, redirect away from login page
   useEffect(() => {
@@ -147,17 +154,20 @@ const UserLogin: React.FC = () => {
             <span>Continue with Google</span>
           </button>
 
-          <div className="mt-6 text-xs text-slate-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <span>
-              Don&apos;t have an account?{" "}
-              <Link to="/register" className="text-indigo-600 font-medium">
-                Create one
-              </Link>
-            </span>
-            <span className="text-slate-400">
-              Forgot password? Contact your administrator.
-            </span>
-          </div>
+          <div className="mt-6 text-xs text-slate-500 flex justify-between">
+  <span>
+    Don&apos;t have an account?{" "}
+    <Link
+      to="/register"
+      className="text-indigo-600 font-medium hover:text-indigo-700"
+    >
+      Create one
+    </Link>
+  </span>
+  <span className="text-slate-400">
+    Forgot password? Contact your administrator.
+  </span>
+</div>
         </div>
       </div>
     </div>
