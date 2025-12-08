@@ -49,20 +49,25 @@ const UserLogin: React.FC = () => {
   }
 
   async function handleGoogleLogin() {
-    setErrorMsg("");
+  setErrorMsg("");
+  setLoading(true);
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin + "/dashboard",
-      },
-    });
+  const redirectTo = `${window.location.origin}/login`;
 
-    if (error) {
-      setErrorMsg(error.message);
-    }
-    // On success, Supabase redirects back to /dashboard
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo,
+    },
+  });
+
+  if (error) {
+    console.error("Google login error", error);
+    setErrorMsg(error.message);
   }
+
+  setLoading(false);
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-sky-50 to-slate-100 px-4">
