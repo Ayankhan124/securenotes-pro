@@ -141,3 +141,19 @@ body {
 .section-fade-in {
   animation: fade-in-up 0.5s ease-out both;
 }
+/* Simple fade + slide animation for auth cards */
+@keyframes auth-card-in {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.auth-card {
+  animation: auth-card-in 0.45s ease-out;
+  transform-origin: center;
+}

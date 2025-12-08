@@ -1,9 +1,10 @@
 // src/App.tsx
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useAuth } from "./lib/auth";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-
 import LandingPage from "./pages/LandingPage";
 import UserLogin from "./pages/auth/UserLogin";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -17,6 +18,20 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 
 function App() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const hideHeaderRoutes = ["/login", "/admin/login"];
+  const hideHeader = hideHeaderRoutes.includes(location.pathname);
+
+  useEffect(() => {
+    if (!user) return;
+    const authRoutes = ["/login", "/register"];
+    if (authRoutes.includes(location.pathname)) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, location.pathname, navigate]);
+
 
   // routes where we hide the main header/footer
   const authRoutes = ["/login", "/register", "/admin/login"];

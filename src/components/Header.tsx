@@ -1,72 +1,69 @@
-// src/components/Header.tsx
 import React, { useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-
-const ADMIN_EMAILS =
-  (import.meta.env.VITE_ADMIN_EMAILS || "")
-    .split(",")
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-function isAdminEmail(email?: string | null): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase());
-}
 
 export default function Header() {
   const { user, signOut } = useAuth();
-  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const nav = useNavigate();
 
-  const admin = isAdminEmail(user?.email);
+  const displayName =
+    (user?.user_metadata as any)?.name ||
+    user?.email?.split("@")[0] ||
+    "Account";
 
-  function closeMenu() {
+  const avatarUrl =
+    (user?.user_metadata as any)?.avatar_url ||
+    (user?.user_metadata as any)?.picture ||
+    "";
+
+  const email = user?.email || "";
+  const phone =
+    (user as any)?.phone ||
+    (user?.user_metadata as any)?.phone ||
+    (user?.user_metadata as any)?.phone_number ||
+    "";
+
+  async function handleSignOut() {
+    await signOut();
     setMenuOpen(false);
-  }
-
-  const linkBase =
-    "text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900";
-  const activeClass = "text-indigo-600";
-
-  function navLinkClass(isActive: boolean) {
-    return `${linkBase} ${isActive ? activeClass : ""}`;
+    nav("/"); // back to home
   }
 
   return (
     <header className="w-full border-b border-slate-100 bg-white/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand */}
-        <Link
-          to="/"
-          className="flex items-center gap-2"
-          onClick={closeMenu}
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white">
             SN
           </div>
           <div className="leading-tight">
             <div className="text-sm font-semibold text-slate-900">
               SecureNotes Pro
             </div>
-            <div className="text-[11px] text-slate-400">
-              College notes hub
-            </div>
+            <div className="text-[11px] text-slate-400">College notes hub</div>
           </div>
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-5 sm:flex">
+        {/* Nav links + account */}
+        <div className="flex items-center gap-4 text-xs sm:text-sm">
           <NavLink
             to="/"
-            className={({ isActive }) => navLinkClass(isActive && location.pathname === "/")}
+            className={({ isActive }) =>
+              (isActive ? "text-slate-900" : "text-slate-500") +
+              " hover:text-slate-900"
+            }
           >
             Home
           </NavLink>
 
           <NavLink
             to="/about"
-            className={({ isActive }) => navLinkClass(isActive)}
+            className={({ isActive }) =>
+              (isActive ? "text-slate-900" : "text-slate-500") +
+              " hover:text-slate-900"
+            }
           >
             About
           </NavLink>
@@ -74,159 +71,105 @@ export default function Header() {
           {user && (
             <NavLink
               to="/dashboard"
-              className={({ isActive }) => navLinkClass(isActive)}
+              className={({ isActive }) =>
+                (isActive ? "text-slate-900" : "text-slate-500") +
+                " hover:text-slate-900"
+              }
             >
               Dashboard
             </NavLink>
           )}
 
-          {admin && (
+          {user && (
             <NavLink
               to="/admin/dashboard"
-              className={({ isActive }) => navLinkClass(isActive)}
+              className={({ isActive }) =>
+                (isActive ? "text-slate-900" : "text-slate-500") +
+                " hover:text-slate-900"
+              }
             >
               Admin
             </NavLink>
           )}
 
+          {/* Right side: auth area */}
           {!user && (
             <>
-              <NavLink
-                to="/register"
-                className={({ isActive }) =>
-                  `${linkBase} ${isActive ? activeClass : ""}`
-                }
+              <button
+                onClick={() => nav("/login")}
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Sign in
+              </button>
+              <button
+                onClick={() => nav("/register")}
+                className="hidden sm:inline-flex rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700"
               >
                 Create account
-              </NavLink>
-              <Link to="/login">
-                <button className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-800">
-                  Sign in
-                </button>
-              </Link>
+              </button>
             </>
           )}
 
           {user && (
-            <button
-              onClick={signOut}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Sign out
-            </button>
-          )}
-        </nav>
-
-        {/* Mobile: sign-in or avatar + burger */}
-        <div className="flex items-center gap-2 sm:hidden">
-          {!user && (
-            <Link to="/login" onClick={closeMenu}>
-              <button className="rounded-md bg-primary px-3 py-1.5 text-[11px] font-medium text-white shadow-sm">
-                Sign in
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs shadow-sm hover:border-slate-300"
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-semibold text-white">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="hidden sm:inline text-[12px] text-slate-800">
+                  {displayName}
+                </span>
               </button>
-            </Link>
-          )}
-          {user && (
-            <span className="text-[11px] text-slate-500 max-w-[120px] truncate">
-              {user.user_metadata?.name || user.email}
-            </span>
-          )}
 
-          <button
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? "✕" : "☰"}
-          </button>
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-lg border border-slate-100 bg-white p-3 text-xs shadow-lg">
+                  <div className="mb-2 border-b border-slate-100 pb-2">
+                    <div className="text-[11px] font-semibold text-slate-500">
+                      Signed in as
+                    </div>
+                    {email && (
+                      <div className="truncate text-[12px] text-slate-800">
+                        {email}
+                      </div>
+                    )}
+                    {phone && (
+                      <div className="mt-0.5 text-[11px] text-slate-500">
+                        {phone}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => nav("/dashboard")}
+                    className="block w-full rounded-md px-2 py-1 text-left text-[12px] text-slate-700 hover:bg-slate-50"
+                  >
+                    My notes dashboard
+                  </button>
+
+                  <button
+                    onClick={handleSignOut}
+                    className="mt-2 block w-full rounded-md bg-rose-50 px-2 py-1 text-left text-[12px] font-medium text-rose-700 hover:bg-rose-100"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Mobile dropdown menu */}
-      {menuOpen && (
-        <div className="sm:hidden border-t border-slate-100 bg-white/95">
-          <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3 text-xs">
-            <NavLink
-              to="/"
-              onClick={closeMenu}
-              className={({ isActive }) =>
-                `${linkBase} ${isActive ? activeClass : ""}`
-              }
-            >
-              Home
-            </NavLink>
-
-            <NavLink
-              to="/about"
-              onClick={closeMenu}
-              className={({ isActive }) =>
-                `${linkBase} ${isActive ? activeClass : ""}`
-              }
-            >
-              About
-            </NavLink>
-
-            {user && (
-              <NavLink
-                to="/dashboard"
-                onClick={closeMenu}
-                className={({ isActive }) =>
-                  `${linkBase} ${isActive ? activeClass : ""}`
-                }
-              >
-                Dashboard
-              </NavLink>
-            )}
-
-            {admin && (
-              <NavLink
-                to="/admin/dashboard"
-                onClick={closeMenu}
-                className={({ isActive }) =>
-                  `${linkBase} ${isActive ? activeClass : ""}`
-                }
-              >
-                Admin
-              </NavLink>
-            )}
-
-            {!user && (
-              <>
-                <NavLink
-                  to="/register"
-                  onClick={closeMenu}
-                  className={({ isActive }) =>
-                    `${linkBase} ${isActive ? activeClass : ""}`
-                  }
-                >
-                  Create account
-                </NavLink>
-                <NavLink
-                  to="/login"
-                  onClick={closeMenu}
-                  className={({ isActive }) =>
-                    `${linkBase} ${isActive ? activeClass : ""}`
-                  }
-                >
-                  Sign in
-                </NavLink>
-              </>
-            )}
-
-            {user && (
-              <button
-                onClick={async () => {
-                  await signOut();
-                  closeMenu();
-                }}
-                className="mt-1 text-left text-xs font-medium text-red-600"
-              >
-                Sign out
-              </button>
-            )}
-          </nav>
-        </div>
-      )}
     </header>
   );
 }
