@@ -1,7 +1,11 @@
 // src/pages/LandingPage.tsx
 import { Link } from "react-router-dom";
+import { useAuth } from "../lib/auth";
 
 const LandingPage = () => {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
+
   return (
     <main className="min-h-[calc(100vh-3.5rem)] bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100">
       <div className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-10 sm:py-14 lg:py-16">
@@ -27,17 +31,29 @@ const LandingPage = () => {
 
           {/* CTA buttons */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Link to="/login">
-              <button className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-indigo-500/30 transition hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0">
-                Sign In
-              </button>
-            </Link>
+            {!isLoggedIn && (
+              <>
+                <Link to="/login">
+                  <button className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-indigo-500/30 transition hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0">
+                    Sign In
+                  </button>
+                </Link>
 
-            <Link to="/register">
-              <button className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:text-indigo-700 active:translate-y-0">
-                Create account
-              </button>
-            </Link>
+                <Link to="/register">
+                  <button className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:text-indigo-700 active:translate-y-0">
+                    Create account
+                  </button>
+                </Link>
+              </>
+            )}
+
+            {isLoggedIn && (
+              <Link to="/dashboard">
+                <button className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-indigo-500/30 transition hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0">
+                  Go to dashboard
+                </button>
+              </Link>
+            )}
           </div>
 
           <p className="text-xs text-slate-500">
