@@ -1,131 +1,81 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../lib/auth";
+// src/pages/LandingPage.tsx
+import { Link } from "react-router-dom";
 
-const LandingPage: React.FC = () => {
-  const nav = useNavigate();
-  const { user } = useAuth();
-
-  const handlePrimaryClick = () => {
-    if (user) {
-      nav("/dashboard");
-    } else {
-      nav("/login");
-    }
-  };
-
-  const handleSecondaryClick = () => {
-    nav("/register");
-  };
-
+const LandingPage = () => {
   return (
-    <main className="page-shell bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100">
-      <section className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-10 px-4 py-10 md:flex-row md:py-16">
-        {/* Left side – hero text */}
-        <div className="max-w-xl space-y-5">
+    <main className="min-h-[calc(100vh-3.5rem)] bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100">
+      <div className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-10 sm:py-14 lg:py-16">
+        {/* Hero */}
+        <section className="max-w-2xl space-y-5">
           <p className="text-xs font-semibold tracking-[0.25em] text-indigo-500">
             COLLEGE NOTES HUB
           </p>
-          <h1 className="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl md:text-5xl">
+
+          <h1 className="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
             One place for all your{" "}
             <span className="text-indigo-600">class notes</span>
             <br />
-            &amp; <span className="text-indigo-600">PDFs</span>.
+            &amp; <span className="text-indigo-600">PDFs.</span>
           </h1>
-          <p className="text-sm text-slate-600 md:text-base">
-            Stop forwarding the same assignments, journals, and notes again and
-            again on WhatsApp. Upload them once here. Your friends just open
-            the site, choose their semester &amp; subject, and read or download
-            what they need.
+
+          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
+            Stop forwarding the same assignments, journals and notes again and
+            again on WhatsApp. Upload them once here. Your friends just open the
+            site, choose their semester &amp; subject, and read or download what
+            they need.
           </p>
 
-          {/* Primary / secondary buttons */}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button
-              onClick={handlePrimaryClick}
-              className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:-translate-y-[1px] hover:bg-indigo-700 hover:shadow-md"
-            >
-              {user ? "Go to your notes" : "Sign In"}
-            </button>
+          {/* CTA buttons */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <Link to="/login">
+              <button className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-indigo-500/30 transition hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0">
+                Sign In
+              </button>
+            </Link>
 
-            {/* Only show “Create account” if NOT logged in */}
-            {!user && (
-              <button
-                onClick={handleSecondaryClick}
-                className="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-[1px] hover:border-slate-400 hover:bg-slate-50"
-              >
+            <Link to="/register">
+              <button className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:text-indigo-700 active:translate-y-0">
                 Create account
               </button>
-            )}
+            </Link>
           </div>
 
           <p className="text-xs text-slate-500">
             Share this website link with your classmates – they just sign in and
             instantly see the latest notes you&apos;ve uploaded.
           </p>
-        </div>
+        </section>
 
-        {/* Right side – example card */}
-        <div className="w-full max-w-md rounded-3xl border border-slate-100 bg-white/90 p-5 shadow-xl backdrop-blur">
-          <div className="mb-3 flex items-center justify-between text-xs">
-            <div className="font-semibold text-slate-500">EXAMPLE VIEW</div>
-            <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-medium text-indigo-600">
-              Your site
-            </span>
+        {/* Three simple feature cards */}
+        <section className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-xs shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              1. Upload once
+            </p>
+            <p className="mt-2 text-slate-700">
+              You upload PDFs / images for each subject and semester.
+            </p>
           </div>
 
-          <h2 className="text-sm font-semibold text-slate-900">
-            Sem 4 · CSE Notes
-          </h2>
-
-          <div className="mt-3 space-y-3 text-xs">
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-slate-900">
-                  Operating Systems – Assignments
-                </p>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                  Sem 4
-                </span>
-              </div>
-              <p className="mt-0.5 text-[11px] text-slate-500">
-                Subject: Operating Systems · PDF + images
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-slate-900">DBMS – Lab Journal</p>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                  Sem 4
-                </span>
-              </div>
-              <p className="mt-0.5 text-[11px] text-slate-500">
-                Shared with your whole class.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-slate-900">
-                  Maths – Important Formulas
-                </p>
-                <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">
-                  Sem 2
-                </span>
-              </div>
-              <p className="mt-0.5 text-[11px] text-slate-500">
-                Quick revision before exams.
-              </p>
-            </div>
+          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-xs shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              2. Share link
+            </p>
+            <p className="mt-2 text-slate-700">
+              Friends visit this site instead of asking you every time.
+            </p>
           </div>
 
-          <p className="mt-4 text-[11px] text-slate-500">
-            This is just a preview card to show how your real dashboard feels
-            once you start uploading notes.
-          </p>
-        </div>
-      </section>
+          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-xs shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              3. Always updated
+            </p>
+            <p className="mt-2 text-slate-700">
+              When you add or update notes, everyone sees it instantly.
+            </p>
+          </div>
+        </section>
+      </div>
     </main>
   );
 };
