@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../api/supabaseClient";
 import { useAuth } from "../../lib/auth";
 
-// TODO: change this to YOUR real admin email
+// TODO: change this to YOUR real admin email(s)
 const ADMIN_EMAILS = ["ayankhan4024@gmail.com"];
 
 type Profile = {
@@ -18,6 +18,7 @@ type Profile = {
 type Note = {
   id: string;
   title: string | null;
+  category?: string | null;
 };
 
 export default function AdminDashboard() {
@@ -29,15 +30,25 @@ export default function AdminDashboard() {
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState("");
+
   const [file, setFile] = useState<File | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
 
+  // NEW: state for creating notes
+  const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [newNoteCategory, setNewNoteCategory] = useState("");
+  const [createNoteLoading, setCreateNoteLoading] = useState(false);
+  const [createNoteError, setCreateNoteError] = useState<string | null>(null);
+  const [createNoteMessage, setCreateNoteMessage] = useState<string | null>(
+    null
+  );
+
   const isAdmin =
     !!user && ADMIN_EMAILS.includes((user.email || "").toLowerCase());
 
-  // --- Guard: only allow configured admin emails ---
+  // --- Guard: must be signed in ---
   if (!user) {
     return (
       <main className="page-shell min-h-screen flex items-center justify-center bg-slate-50">
@@ -48,6 +59,7 @@ export default function AdminDashboard() {
     );
   }
 
+  // --- Guard: must be one of the configured admin emails ---
   if (!isAdmin) {
     return (
       <main className="page-shell min-h-screen flex items-center justify-center bg-slate-50">
@@ -95,7 +107,7 @@ export default function AdminDashboard() {
   async function loadNotes() {
     const { data, error } = await supabase
       .from("notes")
-      .select("id, title")
+      .select("id, title, category")
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -126,6 +138,45 @@ export default function AdminDashboard() {
     }
 
     await loadPendingUsers();
+  }
+
+  // ----------------- CREATE NOTE (NEW) -----------------
+
+  async function handleCreateNote(e: React.FormEvent) {
+    e.preventDefault();
+    setCreateNoteError(null);
+    setCreateNoteMessage(null);
+
+    if (!newNoteTitle.trim()) {
+      setCreateNoteError("Please enter a note title.");
+      return;
+    }
+
+    setCreateNoteLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("notes")
+        .insert({
+          title: newNoteTitle.trim(),
+          category: newNoteCategory.trim() || null,
+        })
+        .select("id, title, category")
+        .single();
+
+      if (error) {
+        console.error("Error creating note", error);
+        setCreateNoteError(error.message);
+        return;
+      }
+
+      // Add the new note into local list + reset form
+      setNotes((prev) => [...prev, data as Note]);
+      setNewNoteTitle("");
+      setNewNoteCategory("");
+      setCreateNoteMessage("Note created successfully.");
+    } finally {
+      setCreateNoteLoading(false);
+    }
   }
 
   // ----------------- UPLOAD ATTACHMENTS -----------------
@@ -200,8 +251,8 @@ export default function AdminDashboard() {
               SecureNotes administration
             </h1>
             <p className="mt-1 text-sm text-slate-600 max-w-xl">
-              Approve new accounts and attach PDFs/images to notes. All changes
-              are enforced by Row Level Security in Supabase.
+              Approve new accounts and manage protected notes. You can create
+              notes and attach PDFs/images which appear in the secure viewer.
             </p>
           </div>
           <div className="text-xs text-right text-slate-500">
@@ -272,76 +323,139 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* UPLOAD ATTACHMENTS */}
-          <div className="glass-card p-5">
-            <h2 className="text-sm font-semibold text-slate-900">
-              Upload PDF / image
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Upload a file into the <code>protected-files</code> storage bucket
-              and link it to a note. Files will show up in the secure viewer
-              page.
-            </p>
+          {/* NOTE MANAGEMENT: create + upload */}
+          <div className="glass-card p-5 space-y-6">
+            {/* Create note */}
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">
+                Create note
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Create a new note record. After that, you can attach PDFs or
+                images to it using the upload section below.
+              </p>
 
-            <form onSubmit={handleUpload} className="mt-4 space-y-4">
-              {/* Note select */}
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Choose note
-                </label>
-                <select
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={selectedNoteId}
-                  onChange={(e) => setSelectedNoteId(e.target.value)}
+              <form onSubmit={handleCreateNote} className="mt-3 space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={newNoteTitle}
+                    onChange={(e) => setNewNoteTitle(e.target.value)}
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Example: Quarterly Security Update"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Category (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newNoteCategory}
+                    onChange={(e) => setNewNoteCategory(e.target.value)}
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Security, HR, Compliance…"
+                  />
+                </div>
+
+                {createNoteError && (
+                  <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded px-3 py-2">
+                    {createNoteError}
+                  </p>
+                )}
+
+                {createNoteMessage && (
+                  <p className="text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-3 py-2">
+                    {createNoteMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={createNoteLoading}
+                  className="w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <option value="">Select a note…</option>
-                  {notes.map((n) => (
-                    <option key={n.id} value={n.id}>
-                      {n.title || `Note ${n.id}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  {createNoteLoading ? "Creating…" : "Create note"}
+                </button>
+              </form>
+            </div>
 
-              {/* File input */}
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  File (PDF or image)
-                </label>
-                <input
-                  type="file"
-                  accept="application/pdf,image/*"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
-                />
-              </div>
+            {/* Upload attachment */}
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">
+                Upload PDF / image
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Upload a file into the <code>protected-files</code> storage
+                bucket and link it to a note. Files will show up in the secure
+                viewer page.
+              </p>
 
-              {uploadError && (
-                <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded px-3 py-2">
-                  {uploadError}
-                </p>
-              )}
+              <form onSubmit={handleUpload} className="mt-4 space-y-4">
+                {/* Note select */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Choose note
+                  </label>
+                  <select
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    value={selectedNoteId}
+                    onChange={(e) => setSelectedNoteId(e.target.value)}
+                  >
+                    <option value="">Select a note…</option>
+                    {notes.map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.title || `Note ${n.id}`}
+                        {n.category ? ` · ${n.category}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {uploadMessage && (
-                <p className="text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-3 py-2">
-                  {uploadMessage}
-                </p>
-              )}
+                {/* File input */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    File (PDF or image)
+                  </label>
+                  <input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={uploadLoading}
-                className="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {uploadLoading ? "Uploading…" : "Upload and attach"}
-              </button>
-            </form>
+                {uploadError && (
+                  <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded px-3 py-2">
+                    {uploadError}
+                  </p>
+                )}
 
-            <p className="mt-3 text-[11px] text-slate-400">
-              Tip: after uploading, open a note from the user dashboard. It will
-              use the attachments table to show PDFs/images in the secure
-              viewer.
-            </p>
+                {uploadMessage && (
+                  <p className="text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-3 py-2">
+                    {uploadMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={uploadLoading}
+                  className="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {uploadLoading ? "Uploading…" : "Upload and attach"}
+                </button>
+              </form>
+
+              <p className="mt-3 text-[11px] text-slate-400">
+                Tip: after uploading, open the corresponding note from the user
+                dashboard. It will use the attachments table to show PDFs/images
+                in the secure viewer.
+              </p>
+            </div>
           </div>
         </section>
       </div>
