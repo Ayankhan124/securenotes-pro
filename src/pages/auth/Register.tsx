@@ -29,17 +29,6 @@ export default function Register() {
       return;
     }
 
-    // Create profile row immediately with role "student"
-    if (data?.user?.id) {
-      await supabase.from("profiles").upsert({
-        id: data.user.id,
-        email,
-        name,
-        role: "student",
-        status: "active",
-      });
-    }
-
     alert("Account created. Please check your email to confirm.");
     nav("/login");
   }
