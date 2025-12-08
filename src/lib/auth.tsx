@@ -1,3 +1,4 @@
+// src/lib/auth.tsx
 import React, {
   createContext,
   useContext,
@@ -6,7 +7,6 @@ import React, {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../api/supabaseClient";
-import { ensureProfile } from "./profile";
 
 type AuthContextType = {
   user: User | null;
@@ -21,35 +21,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1) Initial load
-    supabase.auth.getUser().then(async (res) => {
-      const u = res.data?.user ?? null;
-      setUser(u);
+    let cancelled = false;
 
-      if (u) {
-        // make sure profiles row exists for this user
-        await ensureProfile(u);
+    async function init() {
+      // 1) Check current user once on load
+      const { data, error } = await supabase.auth.getUser();
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("Error getting user", error);
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
+      const u = data?.user ?? null;
+      setUser(u);
       setLoading(false);
-    });
+    }
 
-    // 2) Listen for future auth changes (login/logout)
+    init();
+
+    // 2) Listen for login / logout changes
     const { data: sub } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (cancelled) return;
         const u = session?.user ?? null;
         setUser(u);
-
-        if (u) {
-          // again, ensure profile exists
-          await ensureProfile(u);
-        }
-
         setLoading(false);
       }
     );
 
     return () => {
+      cancelled = true;
       sub?.subscription.unsubscribe();
     };
   }, []);

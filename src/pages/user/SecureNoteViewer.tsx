@@ -57,7 +57,7 @@ const SecureNoteViewer: React.FC = () => {
 
       // 2) Load attachments for this note
       const { data: attRows, error: attErr } = await supabase
-        .from<AttachmentRow>("attachments")
+        .from("attachments")
         .select("*")
         .eq("note_id", noteId)
         .order("created_at", { ascending: false });
