@@ -1,151 +1,143 @@
-// src/pages/LandingPage.tsx
+import React from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../lib/auth";
 
-export default function LandingPage() {
-  const { user } = useAuth();
-
+const LandingPage: React.FC = () => {
   return (
-    <main className="page-shell">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 space-y-16">
-        {/* HERO */}
-        <section className="hero-animated section-fade-in rounded-3xl bg-white/80 border border-slate-100 shadow-xl px-6 py-10 sm:px-10 sm:py-12 flex flex-col md:flex-row md:items-center gap-10">
-          {/* Left: copy */}
-          <div className="flex-1 space-y-4">
-            <p className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50/60 px-3 py-1 text-[11px] font-medium text-indigo-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              All your college notes in one place
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-sky-50 to-slate-100">
+      <section className="mx-auto flex max-w-6xl flex-col items-center px-4 pt-16 pb-20 sm:px-6 lg:flex-row lg:items-start lg:gap-12 lg:pt-20">
+        {/* Left: main hero text */}
+        <div className="max-w-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-500">
+            College note hub
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            One place for all your{" "}
+            <span className="text-indigo-600">class notes</span> and PDFs.
+          </h1>
+          <p className="mt-4 text-sm text-slate-600 sm:text-base">
+            Stop forwarding the same assignments, journals, and notes again and
+            again on WhatsApp. Upload them once here. Your friends just open the
+            site, pick their subject and semester, and download-free read them
+            in the viewer.
+          </p>
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link to="/login">
+              <button className="w-full rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 sm:w-auto">
+                Sign In
+              </button>
+            </Link>
+            <Link to="/register">
+              <button className="w-full rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 sm:w-auto">
+                Create account
+              </button>
+            </Link>
+          </div>
+
+          <p className="mt-3 text-xs text-slate-500">
+            You can share this website link with your classmates – they just
+            sign in and instantly see the latest notes you’ve uploaded.
+          </p>
+
+          {/* Small “how it works” steps */}
+          <div className="mt-8 grid gap-3 text-xs text-slate-600 sm:grid-cols-3">
+            <div className="rounded-xl bg-white/80 p-3 shadow-sm">
+              <div className="text-[11px] font-semibold text-slate-500">
+                1. Upload once
+              </div>
+              <p className="mt-1">
+                You upload PDFs / images for each subject and semester.
+              </p>
+            </div>
+            <div className="rounded-xl bg-white/80 p-3 shadow-sm">
+              <div className="text-[11px] font-semibold text-slate-500">
+                2. Share link
+              </div>
+              <p className="mt-1">
+                Friends visit this site instead of asking you every time.
+              </p>
+            </div>
+            <div className="rounded-xl bg-white/80 p-3 shadow-sm">
+              <div className="text-[11px] font-semibold text-slate-500">
+                3. Always updated
+              </div>
+              <p className="mt-1">
+                When you add or update notes, everyone sees it instantly.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: simple preview card */}
+        <div className="mt-10 w-full max-w-md lg:mt-0 lg:flex-1">
+          <div className="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  Example view
+                </p>
+                <h2 className="mt-1 text-sm font-semibold text-slate-900">
+                  Sem 4 · CSE Notes
+                </h2>
+              </div>
+              <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-medium text-indigo-700">
+                Your site
+              </span>
+            </div>
+
+            <div className="mt-4 space-y-2 text-xs">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-slate-800">
+                    Operating Systems – Assignments
+                  </span>
+                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                    Sem 4
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  Subject: Operating Systems · PDF + images
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-slate-800">
+                    DBMS – Lab Journal
+                  </span>
+                  <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700">
+                    Sem 4
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  Shared with your whole class.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-slate-800">
+                    Maths – Important Formulas
+                  </span>
+                  <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">
+                    Sem 2
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  Quick revision before exams.
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-[11px] text-slate-400">
+              This is just a preview card to show how your real dashboard feels
+              once you start uploading notes.
             </p>
-
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-slate-900 leading-tight">
-              One link for all{" "}
-              <span className="text-indigo-600">notes, assignments, and journals.</span>
-            </h1>
-
-            <p className="text-sm sm:text-base text-slate-600 max-w-xl">
-              Instead of forwarding PDFs to everyone again and again, upload them here
-              once. Your friends can sign in and download or read everything by subject
-              whenever they need.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              {user ? (
-                <>
-                  <Link to="/dashboard">
-                    <button className="nav-cta text-sm px-4 py-2.5">
-                      Go to notes dashboard
-                    </button>
-                  </Link>
-                  <Link
-                    to="/admin/dashboard"
-                    className="text-xs sm:text-sm text-slate-600 underline-offset-4 hover:underline"
-                  >
-                    Upload new notes (admin)
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link to="/login">
-                    <button className="nav-cta text-sm px-4 py-2.5">
-                      Sign in to view notes
-                    </button>
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="text-xs sm:text-sm text-slate-600 underline-offset-4 hover:underline"
-                  >
-                    Request access (create account)
-                  </Link>
-                </>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-4 pt-3">
-              <div className="flex -space-x-2">
-                <div className="h-7 w-7 rounded-full bg-indigo-100 border border-white" />
-                <div className="h-7 w-7 rounded-full bg-emerald-100 border border-white" />
-                <div className="h-7 w-7 rounded-full bg-sky-100 border border-white" />
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Perfect for sharing PDFs for different subjects, semesters and lab journals
-                with your whole class.
-              </p>
-            </div>
           </div>
-
-          {/* Right: simple “preview” panel */}
-          <div className="flex-1 max-w-md w-full">
-            <div className="glass-card rounded-2xl p-4 sm:p-5 shadow-md border border-slate-200 section-fade-in">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                    Notes preview
-                  </p>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Example: BE 3rd Sem – DBMS Notes
-                  </p>
-                </div>
-                <span className="badge-pill bg-indigo-50 text-indigo-700 border border-indigo-100">
-                  PDF Notes
-                </span>
-              </div>
-
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-3 text-[11px] text-slate-500 space-y-2">
-                <p>• Upload unit-wise notes, assignments, lab manuals, and journals.</p>
-                <p>• Your friends just log in once and access everything anytime.</p>
-                <p>• No more searching WhatsApp chats for old PDFs.</p>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3 text-[11px] text-slate-500">
-                <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2">
-                  <p className="font-medium text-slate-800">For you</p>
-                  <p>Upload once, share a single link with your whole class.</p>
-                </div>
-                <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2">
-                  <p className="font-medium text-slate-800">For friends</p>
-                  <p>Clean dashboard with subjects and latest uploads.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FEATURES */}
-        <section className="section-fade-in">
-          <h2 className="text-sm font-semibold text-slate-900 mb-3">
-            Why use SecureNotes Pro for college?
-          </h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="glass-card p-4 text-sm text-slate-600">
-              <h3 className="text-sm font-semibold text-slate-900 mb-1">
-                All subjects, one place
-              </h3>
-              <p className="text-xs text-slate-600">
-                Organize PDFs by subject and semester so nobody has to ask “send notes” in
-                WhatsApp every exam time.
-              </p>
-            </div>
-            <div className="glass-card p-4 text-sm text-slate-600">
-              <h3 className="text-sm font-semibold text-slate-900 mb-1">
-                Simple login for friends
-              </h3>
-              <p className="text-xs text-slate-600">
-                Your classmates create an account once and then can access all notes from
-                any device with a browser.
-              </p>
-            </div>
-            <div className="glass-card p-4 text-sm text-slate-600">
-              <h3 className="text-sm font-semibold text-slate-900 mb-1">
-                You stay in control
-              </h3>
-              <p className="text-xs text-slate-600">
-                You decide what to upload, can remove outdated PDFs, and keep everything
-                clean and organized for your batch.
-              </p>
-            </div>
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </main>
   );
-}
+};
+
+export default LandingPage;
