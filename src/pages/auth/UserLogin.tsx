@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../../api/supabaseClient";
 import { useAuth } from "../../lib/auth";
+import { Alert } from "../../components/Alert";
 
 const UserLogin: React.FC = () => {
   const nav = useNavigate();
@@ -126,10 +127,10 @@ const UserLogin: React.FC = () => {
             </div>
 
             {errorMsg && (
-              <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-md px-3 py-2">
-                {errorMsg}
-              </p>
-            )}
+  <Alert variant="error">
+    {errorMsg}
+  </Alert>
+)}
 
             <button
   type="submit"
