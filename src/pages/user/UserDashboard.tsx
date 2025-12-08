@@ -4,43 +4,56 @@ import { useAuth } from "../../lib/auth";
 type Note = {
   id: string;
   title: string;
-  category: string;
+  subject: string;
   updatedAt: string;
-  sensitivity: "high" | "medium" | "low";
+  type: "notes" | "assignment" | "journal" | "other";
 };
 
 const mockNotes: Note[] = [
   {
     id: "1",
-    title: "Sample Note 1",
-    category: "Security",
+    title: "DBMS Unit 1 – Introduction",
+    subject: "DBMS",
     updatedAt: "2 days ago",
-    sensitivity: "high",
+    type: "notes",
   },
   {
     id: "2",
-    title: "Onboarding — Confidential",
-    category: "HR",
+    title: "OOP Assignment 3 – Inheritance",
+    subject: "OOP",
     updatedAt: "5 days ago",
-    sensitivity: "medium",
+    type: "assignment",
   },
   {
     id: "3",
-    title: "Vendor Access Policy",
-    category: "Compliance",
+    title: "CN Journal – Experiment 4",
+    subject: "Computer Networks",
     updatedAt: "1 week ago",
-    sensitivity: "low",
+    type: "journal",
   },
 ];
+
+function typeLabel(t: Note["type"]) {
+  switch (t) {
+    case "notes":
+      return "Lecture notes";
+    case "assignment":
+      return "Assignment";
+    case "journal":
+      return "Journal / Practical";
+    default:
+      return "Other";
+  }
+}
 
 export default function UserDashboard() {
   const { user } = useAuth();
 
   return (
     <main className="page-shell">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 space-y-6">
-        {/* Top row: greeting + session card */}
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start fade-in-up">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 space-y-6">
+        {/* Top row: greeting + quick info */}
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start">
           <section className="glass-card p-6">
             <p className="text-xs uppercase tracking-wide text-slate-400">
               Welcome back
@@ -49,37 +62,40 @@ export default function UserDashboard() {
               {user?.user_metadata?.name || user?.email}
             </h1>
             <p className="mt-2 text-sm text-slate-600">
-              Your dashboard lists every note you have access to. Content is protected —
-              watermarked and read-only inside the secure viewer.
+              This is your notes dashboard. All the PDFs uploaded for your
+              class will appear here — organized by subject and type so you
+              don&apos;t have to ask for them again.
             </p>
           </section>
 
           <aside className="glass-card p-5 space-y-3 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-slate-600">Session security</span>
+              <span className="text-slate-600">Quick info</span>
               <span className="badge-pill bg-emerald-50 text-emerald-700 border border-emerald-100">
-                Healthy
+                Beta
               </span>
             </div>
             <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>Last sign-in</span>
-              <span>Just now · this device</span>
+              <span>How it works</span>
+              <span>Upload once · share link</span>
             </div>
             <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>Watermark</span>
-              <span>Enabled (user + timestamp)</span>
+              <span>Best use</span>
+              <span>Exam prep & backlog</span>
             </div>
           </aside>
         </div>
 
-        {/* Notes row */}
-        <section className="grid gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start fade-in-up">
+        {/* Notes list + info */}
+        <section className="grid gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start">
           {/* Notes list */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-900">Your Notes</h2>
+              <h2 className="text-sm font-semibold text-slate-900">
+                Latest uploads
+              </h2>
               <p className="text-xs text-slate-500">
-                Click a note to open it in secure view.
+                Click a card to open the PDF or file.
               </p>
             </div>
 
@@ -92,29 +108,16 @@ export default function UserDashboard() {
                         {note.title}
                       </h3>
                       <p className="mt-0.5 text-xs text-slate-500">
-                        {note.category} · Updated {note.updatedAt}
+                        {note.subject} · Updated {note.updatedAt}
                       </p>
                     </div>
 
                     <div className="flex flex-col items-end gap-1">
-                      <span
-                        className={
-                          "badge-pill border " +
-                          (note.sensitivity === "high"
-                            ? "bg-red-50 text-red-700 border-red-100"
-                            : note.sensitivity === "medium"
-                            ? "bg-amber-50 text-amber-700 border-amber-100"
-                            : "bg-emerald-50 text-emerald-700 border-emerald-100")
-                        }
-                      >
-                        {note.sensitivity === "high"
-                          ? "High sensitivity"
-                          : note.sensitivity === "medium"
-                          ? "Internal"
-                          : "General"}
+                      <span className="badge-pill border bg-slate-50 text-slate-700 border-slate-200">
+                        {typeLabel(note.type)}
                       </span>
                       <span className="text-[10px] text-slate-400">
-                        View only • watermarked
+                        Tap to view in browser
                       </span>
                     </div>
                   </article>
@@ -123,26 +126,26 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* Info sidebar */}
+          {/* Right column: small help panel */}
           <aside className="space-y-3">
             <div className="glass-card p-4 text-xs text-slate-600">
               <h3 className="mb-2 text-sm font-semibold">
-                How secure viewing works
+                Tips for using this site
               </h3>
               <ul className="list-disc list-inside space-y-1">
-                <li>Content opens in a read-only, watermark-protected viewer.</li>
-                <li>Copy, print, and download are blocked where possible.</li>
-                <li>Every open is logged for audit and compliance.</li>
+                <li>Check here first before asking friends for any PDF.</li>
+                <li>Use desktop or tablet for comfortable reading.</li>
+                <li>Bookmark this site so you don&apos;t lose the link.</li>
               </ul>
             </div>
 
             <div className="glass-card p-4 text-xs text-slate-600">
               <h3 className="mb-2 text-sm font-semibold">
-                Need access to more notes?
+                Need a missing PDF?
               </h3>
               <p>
-                Contact your administrator if you believe you should see additional
-                documents or categories.
+                If some subject or assignment is missing, ping the owner of
+                this site so they can upload it once for everyone.
               </p>
             </div>
           </aside>

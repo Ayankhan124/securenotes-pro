@@ -14,18 +14,18 @@ export default function LandingPage() {
           <div className="flex-1 space-y-4">
             <p className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50/60 px-3 py-1 text-[11px] font-medium text-indigo-700">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Secure, admin-controlled note sharing
+              All your college notes in one place
             </p>
 
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-slate-900 leading-tight">
-              Share sensitive notes{" "}
-              <span className="text-indigo-600">without losing control.</span>
+              One link for all{" "}
+              <span className="text-indigo-600">notes, assignments, and journals.</span>
             </h1>
 
             <p className="text-sm sm:text-base text-slate-600 max-w-xl">
-              SecureNotes Pro lets admins distribute read-only, watermarked
-              notes to specific users. No downloads, no copy-paste where
-              supported, and every view is logged for compliance.
+              Instead of forwarding PDFs to everyone again and again, upload them here
+              once. Your friends can sign in and download or read everything by subject
+              whenever they need.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
@@ -33,14 +33,14 @@ export default function LandingPage() {
                 <>
                   <Link to="/dashboard">
                     <button className="nav-cta text-sm px-4 py-2.5">
-                      Go to your dashboard
+                      Go to notes dashboard
                     </button>
                   </Link>
                   <Link
                     to="/admin/dashboard"
                     className="text-xs sm:text-sm text-slate-600 underline-offset-4 hover:underline"
                   >
-                    Admin console
+                    Upload new notes (admin)
                   </Link>
                 </>
               ) : (
@@ -67,8 +67,8 @@ export default function LandingPage() {
                 <div className="h-7 w-7 rounded-full bg-sky-100 border border-white" />
               </div>
               <p className="text-[11px] text-slate-500">
-                Designed for teams handling HR, legal, security, and compliance
-                docs.
+                Perfect for sharing PDFs for different subjects, semesters and lab journals
+                with your whole class.
               </p>
             </div>
           </div>
@@ -79,34 +79,31 @@ export default function LandingPage() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                    Secure viewer
+                    Notes preview
                   </p>
                   <p className="text-sm font-semibold text-slate-900">
-                    Example: Quarterly Security Update
+                    Example: BE 3rd Sem – DBMS Notes
                   </p>
                 </div>
-                <span className="badge-pill bg-amber-50 text-amber-700 border border-amber-100">
-                  High sensitivity
+                <span className="badge-pill bg-indigo-50 text-indigo-700 border border-indigo-100">
+                  PDF Notes
                 </span>
               </div>
 
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-3 text-[11px] text-slate-500 space-y-2">
-                <p>
-                  • Downloads and copy-paste are blocked where supported by the
-                  browser.
-                </p>
-                <p>• Views are watermarked with user identity and timestamp.</p>
-                <p>• Every open is written to an immutable audit log.</p>
+                <p>• Upload unit-wise notes, assignments, lab manuals, and journals.</p>
+                <p>• Your friends just log in once and access everything anytime.</p>
+                <p>• No more searching WhatsApp chats for old PDFs.</p>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-[11px] text-slate-500">
                 <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2">
-                  <p className="font-medium text-slate-800">Admins</p>
-                  <p>Publish and revoke notes, manage access, see audit trail.</p>
+                  <p className="font-medium text-slate-800">For you</p>
+                  <p>Upload once, share a single link with your whole class.</p>
                 </div>
                 <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2">
-                  <p className="font-medium text-slate-800">End users</p>
-                  <p>Read-only, watermarked access from web or tablet.</p>
+                  <p className="font-medium text-slate-800">For friends</p>
+                  <p>Clean dashboard with subjects and latest uploads.</p>
                 </div>
               </div>
             </div>
@@ -116,34 +113,34 @@ export default function LandingPage() {
         {/* FEATURES */}
         <section className="section-fade-in">
           <h2 className="text-sm font-semibold text-slate-900 mb-3">
-            Built for controlled distribution
+            Why use SecureNotes Pro for college?
           </h2>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="glass-card p-4 text-sm text-slate-600">
               <h3 className="text-sm font-semibold text-slate-900 mb-1">
-                Admin-only publishing
+                All subjects, one place
               </h3>
               <p className="text-xs text-slate-600">
-                Only admins can create and assign notes. Users simply sign in
-                and read what they’re allowed to see.
+                Organize PDFs by subject and semester so nobody has to ask “send notes” in
+                WhatsApp every exam time.
               </p>
             </div>
             <div className="glass-card p-4 text-sm text-slate-600">
               <h3 className="text-sm font-semibold text-slate-900 mb-1">
-                Watermarked, read-only viewer
+                Simple login for friends
               </h3>
               <p className="text-xs text-slate-600">
-                Inline PDF/image viewer with watermark overlays and basic
-                protections against screenshots and copy/export.
+                Your classmates create an account once and then can access all notes from
+                any device with a browser.
               </p>
             </div>
             <div className="glass-card p-4 text-sm text-slate-600">
               <h3 className="text-sm font-semibold text-slate-900 mb-1">
-                Audit-ready access logs
+                You stay in control
               </h3>
               <p className="text-xs text-slate-600">
-                Every open is logged in Supabase so you can answer who saw what,
-                and when, during reviews or audits.
+                You decide what to upload, can remove outdated PDFs, and keep everything
+                clean and organized for your batch.
               </p>
             </div>
           </div>
