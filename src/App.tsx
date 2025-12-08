@@ -55,6 +55,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+  path="/notes/:id"
+  element={
+    <ProtectedRoute>
+      <SecureNoteViewer />
+    </ProtectedRoute>
+  }
+/>
 
         {/* Fallback */}
         <Route path="*" element={<NotFound />} />

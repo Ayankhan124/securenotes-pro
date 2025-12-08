@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../api/supabaseClient";
 
@@ -10,16 +10,19 @@ type Note = {
   semester: string;
   category: string | null;
   sensitivity: "high" | "medium" | "low";
-  updatedAt: string; // nice formatted date string
+  updatedAt: string; // formatted date
 };
 
 const UserDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
   const [subjectFilter, setSubjectFilter] = useState<string>("All subjects");
   const [semesterFilter, setSemesterFilter] = useState<string>("All semesters");
+  const [appliedUrlFilters, setAppliedUrlFilters] = useState(false);
 
   // 1) Load notes from Supabase
   useEffect(() => {
@@ -33,6 +36,7 @@ const UserDashboard: React.FC = () => {
 
       if (error) {
         console.error("Error loading notes", error);
+        setNotes([]);
         setLoading(false);
         return;
       }
@@ -58,7 +62,7 @@ const UserDashboard: React.FC = () => {
     loadNotes();
   }, []);
 
-  // 2) Build dynamic dropdown options from the notes
+  // 2) Dynamic filter options
   const subjectOptions = useMemo(() => {
     const set = new Set<string>();
     notes.forEach((n) => {
@@ -75,7 +79,25 @@ const UserDashboard: React.FC = () => {
     return ["All semesters", ...Array.from(set)];
   }, [notes]);
 
-  // 3) Apply filters
+  // 3) Apply URL filters once, when notes/options are ready
+  useEffect(() => {
+    if (appliedUrlFilters) return;
+    if (!notes.length) return; // nothing to filter yet
+
+    const subjectParam = searchParams.get("subject");
+    const semesterParam = searchParams.get("semester");
+
+    if (subjectParam && subjectOptions.includes(subjectParam)) {
+      setSubjectFilter(subjectParam);
+    }
+    if (semesterParam && semesterOptions.includes(semesterParam)) {
+      setSemesterFilter(semesterParam);
+    }
+
+    setAppliedUrlFilters(true);
+  }, [appliedUrlFilters, notes.length, searchParams, subjectOptions, semesterOptions]);
+
+  // 4) Filtered notes
   const filteredNotes = useMemo(() => {
     return notes.filter((note) => {
       const subjectOk =
@@ -90,7 +112,7 @@ const UserDashboard: React.FC = () => {
   return (
     <main className="page-shell bg-slate-50/60">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-        {/* top row: greeting + security summary */}
+        {/* top row: greeting + summary */}
         <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <section className="glass-card rounded-2xl bg-white/70 p-5 shadow-sm backdrop-blur">
             <p className="text-xs uppercase tracking-wide text-slate-400">
@@ -100,26 +122,26 @@ const UserDashboard: React.FC = () => {
               {user?.user_metadata?.name || user?.email}
             </h1>
             <p className="mt-2 text-sm text-slate-600">
-              This dashboard lists all the notes you have access to – grouped by
-              subject and semester. Open any note to view PDFs or images in the
-              secure reader.
+              This dashboard lists all uploaded PDFs — notes, assignments and
+              journals. Use the filters to quickly jump to a subject and
+              semester.
             </p>
           </section>
 
           <aside className="glass-card rounded-2xl bg-white/70 p-5 text-sm shadow-sm backdrop-blur">
             <div className="flex items-center justify-between">
-              <span className="text-slate-600">Session security</span>
+              <span className="text-slate-600">Session info</span>
               <span className="badge-pill border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
-                Healthy
+                Student hub
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-              <span>Last sign-in</span>
-              <span>Just now · this device</span>
+              <span>Signed in as</span>
+              <span>{user?.email}</span>
             </div>
             <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
-              <span>Watermark</span>
-              <span>Enabled (user + timestamp)</span>
+              <span>Tip</span>
+              <span>Bookmark this page (Ctrl + D)</span>
             </div>
           </aside>
         </div>
@@ -134,7 +156,7 @@ const UserDashboard: React.FC = () => {
                   Your Notes
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Click a note to open it in secure view.
+                  Click a card to open it in the note viewer.
                 </p>
               </div>
 
@@ -181,8 +203,8 @@ const UserDashboard: React.FC = () => {
 
               {!loading && filteredNotes.length === 0 && (
                 <p className="rounded-xl border border-dashed border-slate-200 bg-white/60 px-4 py-6 text-center text-xs text-slate-500">
-                  No notes found yet. Ask the admin to upload some PDFs for your
-                  subjects and semesters.
+                  No notes found for this filter yet. Try changing the subject
+                  or semester, or ask the admin to upload some PDFs.
                 </p>
               )}
 
@@ -195,8 +217,9 @@ const UserDashboard: React.FC = () => {
                           {note.title}
                         </h3>
                         <p className="mt-0.5 text-xs text-slate-500">
-                          {note.subject} · {note.semester} · Updated{" "}
-                          {note.updatedAt}
+                          {note.subject || "General"} ·{" "}
+                          {note.semester || "Semester"}{" "}
+                          {note.updatedAt ? `· Updated ${note.updatedAt}` : ""}
                         </p>
                       </div>
 
@@ -231,22 +254,22 @@ const UserDashboard: React.FC = () => {
           <aside className="space-y-3">
             <div className="glass-card rounded-2xl bg-white/70 p-4 text-xs text-slate-600 shadow-sm backdrop-blur">
               <h3 className="mb-2 text-sm font-semibold">
-                How this helps in college
+                How this helps your class
               </h3>
               <ul className="list-disc list-inside space-y-1">
-                <li>Upload once, share one link with your entire class.</li>
-                <li>Group notes by subject and semester for quick access.</li>
-                <li>No random WhatsApp forwards – everything stays organized.</li>
+                <li>Upload once, share one link with your classmates.</li>
+                <li>Use filters to quickly jump to your semester & subject.</li>
+                <li>No more scrolling through old chats to find PDFs.</li>
               </ul>
             </div>
 
             <div className="glass-card rounded-2xl bg-white/70 p-4 text-xs text-slate-600 shadow-sm backdrop-blur">
               <h3 className="mb-2 text-sm font-semibold">
-                Need more subjects?
+                Missing a subject?
               </h3>
               <p>
-                Ask the admin (you!) to upload PDFs for new subjects or
-                semesters so your friends can instantly access them here.
+                If a particular subject or semester is empty, ping the owner of
+                this site so they can upload the latest notes and assignments.
               </p>
             </div>
           </aside>

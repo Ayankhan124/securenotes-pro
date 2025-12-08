@@ -8,17 +8,17 @@ const LandingPage: React.FC = () => {
         {/* Left: main hero text */}
         <div className="max-w-xl">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-500">
-            College note hub
+            College notes hub
           </p>
           <h1 className="mt-3 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
             One place for all your{" "}
-            <span className="text-indigo-600">class notes</span> and PDFs.
+            <span className="text-indigo-600">class notes & PDFs</span>.
           </h1>
           <p className="mt-4 text-sm text-slate-600 sm:text-base">
             Stop forwarding the same assignments, journals, and notes again and
             again on WhatsApp. Upload them once here. Your friends just open the
-            site, pick their subject and semester, and download-free read them
-            in the viewer.
+            site, choose their semester & subject, and read or download what
+            they need.
           </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -35,8 +35,8 @@ const LandingPage: React.FC = () => {
           </div>
 
           <p className="mt-3 text-xs text-slate-500">
-            You can share this website link with your classmates – they just
-            sign in and instantly see the latest notes you’ve uploaded.
+            Share this website link with your classmates – they just sign in and
+            instantly see the latest notes you’ve uploaded.
           </p>
 
           {/* Small “how it works” steps */}
@@ -64,6 +64,39 @@ const LandingPage: React.FC = () => {
               <p className="mt-1">
                 When you add or update notes, everyone sees it instantly.
               </p>
+            </div>
+          </div>
+
+          {/* Quick semester / subject shortcuts */}
+          <div className="mt-8 space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              Quick shortcuts
+            </p>
+            <div className="flex flex-wrap gap-2 text-[11px]">
+              <Link
+                to="/dashboard?semester=Sem 3"
+                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 hover:border-indigo-200 hover:text-indigo-700"
+              >
+                Open Sem 3 notes
+              </Link>
+              <Link
+                to="/dashboard?semester=Sem 4"
+                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 hover:border-indigo-200 hover:text-indigo-700"
+              >
+                Open Sem 4 notes
+              </Link>
+              <Link
+                to="/dashboard?semester=Sem 4&subject=DBMS"
+                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 hover:border-indigo-200 hover:text-indigo-700"
+              >
+                Sem 4 – DBMS
+              </Link>
+              <Link
+                to="/dashboard"
+                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 hover:border-indigo-200 hover:text-indigo-700"
+              >
+                View all notes
+              </Link>
             </div>
           </div>
         </div>
