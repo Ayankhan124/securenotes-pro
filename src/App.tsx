@@ -1,91 +1,22 @@
 // src/App.tsx
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import { useAuth } from "./lib/auth";
+import React from "react";
+import {
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+
 import LandingPage from "./pages/LandingPage";
-import UserLogin from "./pages/auth/UserLogin";
-import AdminLogin from "./pages/admin/AdminLogin";
-import Register from "./pages/auth/Register";
-import Dashboard from "./pages/user/UserDashboard";
-import SecureNoteViewer from "./pages/user/SecureNoteViewer";
 import AboutPage from "./pages/AboutPage";
-import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./lib/ProtectedRoute";
+
+import UserLogin from "./pages/auth/UserLogin";
+import Register from "./pages/auth/Register";
+
+import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
-function App() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const hideHeaderRoutes = ["/login", "/admin/login"];
-  const hideHeader = hideHeaderRoutes.includes(location.pathname);
-
-  useEffect(() => {
-    if (!user) return;
-    const authRoutes = ["/login", "/register"];
-    if (authRoutes.includes(location.pathname)) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [user, location.pathname, navigate]);
-
-
-  // routes where we hide the main header/footer
-  const authRoutes = ["/login", "/register", "/admin/login"];
-  const hideChrome = authRoutes.includes(location.pathname);
-
-  return (
-    <>
-      {!hideChrome && <Header />}
-
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/about" element={<AboutPage />} />
-
-        {/* Auth */}
-        <Route path="/login" element={<UserLogin />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-
-        {/* Protected (user) */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notes/:id"
-          element={
-            <ProtectedRoute>
-              <SecureNoteViewer />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Protected (admin) - we still rely on AdminDashboard to gate by email */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Fallback */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-
-      {!hideChrome && <Footer />}
-    </>
-  );
-}
-
-export default App;
+import UserDashboard from "./pages/user
