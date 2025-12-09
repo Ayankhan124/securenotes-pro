@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+// src/pages/user/UserDashboard.tsx
+import { useEffect, useState, MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../api/supabaseClient";
 import { useAuth } from "../../lib/auth";
@@ -11,28 +12,12 @@ type Note = {
   updated_at: string | null;
 };
 
-const SEMESTER_OPTIONS = ["All", "1", "2", "3", "4", "5", "6", "7", "8"];
-const SUBJECT_OPTIONS = [
-  "All",
-  "Maths",
-  "Physics",
-  "Chemistry",
-  "DBMS",
-  "OS",
-  "CN",
-  "DSA",
-  "Other",
-];
-
 export default function UserDashboard() {
   const { user } = useAuth();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const [semesterFilter, setSemesterFilter] = useState("All");
-  const [subjectFilter, setSubjectFilter] = useState("All");
 
   useEffect(() => {
     (async () => {
@@ -41,12 +26,12 @@ export default function UserDashboard() {
 
       const { data, error } = await supabase
         .from("notes")
-        .select("*")
+        .select("id, title, subject, semester, updated_at")
         .order("updated_at", { ascending: false });
 
       if (error) {
         console.error("Error loading notes", error);
-        setErrorMsg("Could not load your notes. Please try again.");
+        setErrorMsg("Could not load notes. Please try again.");
         setNotes([]);
         setLoading(false);
         return;
@@ -57,169 +42,189 @@ export default function UserDashboard() {
     })();
   }, []);
 
-  const filteredNotes = notes.filter((n) => {
-    const semOk =
-      semesterFilter === "All" ||
-      (n.semester ?? "").toString() === semesterFilter;
+  function formatDate(iso: string | null) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString();
+  }
 
-    const subjOk =
-      subjectFilter === "All" ||
-      (n.subject ?? "").toLowerCase() === subjectFilter.toLowerCase();
+  function copyShareLink(e: MouseEvent, noteId: string) {
+    e.preventDefault();
+    e.stopPropagation();
 
-    return semOk && subjOk;
-  });
+    const url = `${window.location.origin}/notes/${noteId}`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          alert("Share link copied to clipboard.");
+        })
+        .catch(() => {
+          alert("Share link: " + url);
+        });
+    } else {
+      alert("Share link: " + url);
+    }
+  }
+
+  const displayName =
+    (user?.user_metadata as any)?.name ||
+    user?.email?.split("@")[0] ||
+    user?.email ||
+    "Student";
 
   return (
-    <main className="page-shell bg-slate-50/60 min-h-screen">
-      <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
-        {/* Greeting + quick info */}
-        <section className="grid gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start">
-          <div className="glass-card p-6">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/40 to-slate-100">
+      <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
+        {/* Top hero row */}
+        <section className="grid gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start">
+          {/* Welcome card */}
+          <div className="rounded-3xl border border-slate-100 bg-white/90 p-6 shadow-sm">
             <p className="text-xs uppercase tracking-wide text-slate-400">
               Welcome back
             </p>
             <h1 className="mt-1 text-xl font-semibold text-slate-900">
-              {user?.user_metadata?.name || user?.email}
+              {displayName}
             </h1>
             <p className="mt-2 text-sm text-slate-600">
-              All the PDFs and notes your friends need — in one place. Choose a
-              semester and subject, then open the note to read it in the secure
-              viewer.
+              All the PDFs and notes for your class live here. Open a note in
+              the secure viewer, or copy a share link for your friends.
             </p>
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-medium text-indigo-700">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+              {notes.length === 0
+                ? "No notes yet – ask your class admin to upload some."
+                : `${notes.length} note${notes.length > 1 ? "s" : ""} available`}
+            </div>
           </div>
 
-          <aside className="glass-card p-5 space-y-3 text-sm">
+          {/* Session / info card */}
+          <aside className="rounded-3xl border border-slate-100 bg-white/90 p-5 shadow-sm text-xs text-slate-600 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-slate-600">Session security</span>
-              <span className="badge-pill bg-emerald-50 text-emerald-700 border border-emerald-100">
+              <span className="text-sm font-semibold text-slate-900">
+                Session security
+              </span>
+              <span className="inline-flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
                 Healthy
               </span>
             </div>
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>Last sign-in</span>
-              <span>Just now · this device</span>
+            <div className="flex items-center justify-between">
+              <span>Signed in as</span>
+              <span className="truncate max-w-[180px] text-right text-slate-500">
+                {user?.email}
+              </span>
             </div>
-            <div className="flex items-center justify-between text-xs text-slate-500">
+            <div className="flex items-center justify-between">
               <span>Watermark</span>
-              <span>Enabled (user + timestamp)</span>
+              <span className="text-slate-500">
+                Enabled (user email + timestamp)
+              </span>
             </div>
           </aside>
         </section>
 
-        {/* Filters */}
-        <section className="glass-card flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-          <div className="flex flex-wrap gap-3">
-            <label className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Semester</span>
-              <select
-                value={semesterFilter}
-                onChange={(e) => setSemesterFilter(e.target.value)}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {SEMESTER_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt === "All" ? "All semesters" : `Sem ${opt}`}
-                  </option>
-                ))}
-              </select>
-            </label>
+        {/* Notes + Help row */}
+        <section className="grid gap-6 md:grid-cols-[minmax(0,1.7fr)_minmax(0,1.05fr)] items-start">
+          {/* Notes list */}
+          <div className="rounded-3xl border border-slate-100 bg-white/95 p-5 shadow-sm">
+            <header className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Your notes
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Tap a note to open it in the secure viewer.
+                </p>
+              </div>
+            </header>
 
-            <label className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Subject</span>
-              <select
-                value={subjectFilter}
-                onChange={(e) => setSubjectFilter(e.target.value)}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {SUBJECT_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt === "All" ? "All subjects" : opt}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <p className="text-xs text-slate-500">
-            Showing <span className="font-semibold">{filteredNotes.length}</span>{" "}
-            notes
-          </p>
-        </section>
-
-        {/* Notes list */}
-        <section className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-900">
-                Your Notes
-              </h2>
-              <p className="text-xs text-slate-500">
-                Click a note to open it in secure view.
-              </p>
-            </div>
+            <div className="mt-4 h-px bg-slate-100" />
 
             {loading && (
-              <div className="flex items-center justify-center py-10 text-sm text-slate-500">
-                Loading notes…
-              </div>
+              <p className="mt-3 text-xs text-slate-500">Loading notes…</p>
             )}
 
-            {!loading && errorMsg && (
-              <div className="rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
-                {errorMsg}
-              </div>
+            {errorMsg && (
+              <p className="mt-3 text-xs text-rose-500">{errorMsg}</p>
             )}
 
-            {!loading && !errorMsg && filteredNotes.length === 0 && (
-              <p className="py-6 text-xs text-slate-500">
-                No notes match this filter yet. Try another subject or semester,
-                or ask your friend (the admin) to upload some PDFs.
+            {!loading && !errorMsg && notes.length === 0 && (
+              <p className="mt-3 text-xs text-slate-500">
+                No notes yet. Once your admin uploads PDFs, they will appear
+                here automatically.
               </p>
             )}
 
-            {!loading &&
-              !errorMsg &&
-              filteredNotes.map((note) => (
-                <Link key={note.id} to={`/notes/${note.id}`}>
-                  <article className="note-card flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-medium text-slate-900">
-                        {note.title || "Untitled note"}
-                      </h3>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {note.subject || "Subject not set"} · Sem{" "}
-                        {note.semester || "-"}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="badge-pill bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px]">
-                        PDF / images
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        View only • watermarked
-                      </span>
-                    </div>
-                  </article>
-                </Link>
-              ))}
+            <div className="mt-3 space-y-2">
+              {!loading &&
+                !errorMsg &&
+                notes.map((note) => (
+                  <Link key={note.id} to={`/notes/${note.id}`}>
+                    <article className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3 hover:bg-slate-50">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-medium text-slate-900">
+                          {note.title || "Untitled note"}
+                        </h3>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {(note.subject || "Subject not set") +
+                            (note.semester
+                              ? ` · Sem ${note.semester}`
+                              : "")}
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-slate-400">
+                          {note.updated_at
+                            ? `Updated ${formatDate(note.updated_at)}`
+                            : "Recently added"}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+                          PDF / images
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => copyShareLink(e, note.id)}
+                          className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-medium text-slate-600 hover:bg-white"
+                        >
+                          Copy link
+                        </button>
+                      </div>
+                    </article>
+                  </Link>
+                ))}
+            </div>
           </div>
 
-          {/* Right column: help text */}
+          {/* Help / how it works */}
           <aside className="space-y-3">
-            <div className="glass-card p-4 text-xs text-slate-600">
-              <h3 className="mb-2 text-sm font-semibold">
-                How this site works
+            <div className="rounded-3xl border border-slate-100 bg-white/90 p-4 shadow-sm text-xs text-slate-600">
+              <h3 className="mb-2 text-sm font-semibold text-slate-900">
+                How this page works
               </h3>
               <ul className="ml-4 list-disc space-y-1">
-                <li>All notes are uploaded once and shared with everyone.</li>
+                <li>Your class admin uploads notes on the Admin page.</li>
+                <li>They appear here grouped by title, subject & semester.</li>
                 <li>
-                  Choose your semester + subject to quickly find the right PDF.
-                </li>
-                <li>
-                  Notes open in a read-only viewer so your original files stay
+                  You read everything in a watermarked viewer to keep files
                   safe.
                 </li>
               </ul>
+            </div>
+
+            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 p-4 text-[11px] text-slate-600">
+              <p className="font-semibold text-slate-900 mb-1">
+                Tip for sharing with friends
+              </p>
+              <p>
+                Instead of sending PDFs on WhatsApp, just{" "}
+                <span className="font-medium text-slate-800">
+                  copy the note link
+                </span>{" "}
+                – they&apos;ll always see the latest version here.
+              </p>
             </div>
           </aside>
         </section>

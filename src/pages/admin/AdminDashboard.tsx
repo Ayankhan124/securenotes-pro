@@ -1,403 +1,448 @@
-import React, { useEffect, useState } from "react";
-import { useAuth } from "../../lib/auth";
+// src/pages/admin/AdminDashboard.tsx
+import { useEffect, useState, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../api/supabaseClient";
-import { Alert } from "../../components/Alert";
 
 type Note = {
   id: string;
   title: string;
   subject: string | null;
   semester: string | null;
-  created_at: string | null;
+  created_at: string;
 };
 
 type Attachment = {
   id: string;
   note_id: string;
   name: string;
+  path: string;
   mime_type: string;
-  created_at: string | null;
+  created_at: string;
 };
 
-const ADMIN_EMAILS =
-  (import.meta.env.VITE_ADMIN_EMAILS || "")
-    .split(",")
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
+type ActivityRow = {
+  id: string;
+  action: string;
+  created_at: string;
+  note_id: string | null;
+};
 
-function isAdminEmail(email?: string | null): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase());
-}
-
-const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
-
+export default function AdminDashboard() {
   const [notes, setNotes] = useState<Note[]>([]);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [recentUploads, setRecentUploads] = useState<Attachment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [selectedNoteId, setSelectedNoteId] = useState<string>("");
+  // form state (create / edit)
+  const [newTitle, setNewTitle] = useState("");
+  const [newSubject, setNewSubject] = useState("");
+  const [newSemester, setNewSemester] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+
+  // upload state
+  const [selectedNoteId, setSelectedNoteId] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [uploadMsg, setUploadMsg] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
 
-  const isAdmin = isAdminEmail(user?.email);
+  const nav = useNavigate();
 
-  // If not logged in or not admin, don't run any admin queries
-  useEffect(() => {
-    if (!user || !isAdmin) {
-      setLoading(false);
-      return;
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  async function loadRecentUploads() {
+    try {
+      const { data, error } = await supabase
+        .from("attachments")
+        .select("id, note_id, name, mime_type, path, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error("Load attachments error:", error);
+        return;
+      }
+
+      setRecentUploads((data || []) as Attachment[]);
+    } catch (err) {
+      console.error("Unexpected recent uploads error:", err);
     }
+  }
 
+  // Load notes + recent uploads
+  useEffect(() => {
     async function loadData() {
       setLoading(true);
-      setErrorMsg("");
+      try {
+        const { data: notesData, error: notesErr } = await supabase
+          .from("notes")
+          .select("id, title, subject, semester, created_at")
+          .order("created_at", { ascending: false });
 
-      // Load notes
-      const { data: notesData, error: notesErr } = await supabase
-        .from("notes")
-        .select("id, title, subject, semester, created_at")
-        .order("created_at", { ascending: false });
+        if (notesErr) {
+          console.error("Load notes error:", notesErr);
+        } else if (notesData) {
+          setNotes(notesData as Note[]);
+        }
 
-      if (notesErr) {
-        console.error("Error loading notes", notesErr);
-        setErrorMsg(notesErr.message);
+        await loadRecentUploads();
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const typedNotes: Note[] =
-        (notesData ?? []).map((n: any) => ({
-          id: n.id,
-          title: n.title || "Untitled note",
-          subject: n.subject,
-          semester: n.semester,
-          created_at: n.created_at,
-        })) || [];
-
-      setNotes(typedNotes);
-
-      // Load attachments (just for overview)
-      const { data: attData, error: attErr } = await supabase
-        .from("attachments")
-        .select("id, note_id, name, mime_type, created_at")
-        .order("created_at", { ascending: false });
-
-      if (attErr) {
-        console.error("Error loading attachments", attErr);
-        setErrorMsg(attErr.message);
-        setAttachments([]);
-        setLoading(false);
-        return;
-      }
-
-      const typedAttachments: Attachment[] =
-        (attData ?? []).map((a: any) => ({
-          id: a.id,
-          note_id: a.note_id,
-          name: a.name,
-          mime_type: a.mime_type,
-          created_at: a.created_at,
-        })) || [];
-
-      setAttachments(typedAttachments);
-      setLoading(false);
     }
 
     loadData();
-  }, [user, isAdmin]);
+  }, []);
 
-  async function handleUpload(e: React.FormEvent) {
+  // ---------------------------------------------------------------------------
+  // Note create / update
+  // ---------------------------------------------------------------------------
+
+  async function handleCreateOrUpdateNote(e: FormEvent) {
     e.preventDefault();
-    setUploadMsg("");
 
-    if (!user) {
-      setUploadMsg("You must be signed in as admin to upload.");
+    if (!newTitle.trim() || !newSubject.trim() || !newSemester.trim()) {
+      alert("Please fill title, subject and semester.");
       return;
     }
 
-    if (!isAdmin) {
-      setUploadMsg("Only admin accounts can upload files.");
+    const payload = {
+      title: newTitle.trim(),
+      subject: newSubject.trim(),
+      semester: newSemester.trim(),
+    };
+
+    if (editingNoteId) {
+      // UPDATE existing note
+      const { data, error } = await supabase
+        .from("notes")
+        .update(payload)
+        .eq("id", editingNoteId)
+        .select("id, title, subject, semester, created_at")
+        .single();
+
+      if (error || !data) {
+        console.error("Update note error:", error);
+        alert("Failed to update note.");
+        return;
+      }
+
+      setNotes((prev) =>
+        prev.map((n) => (n.id === editingNoteId ? (data as Note) : n)),
+      );
+
+      setEditingNoteId(null);
+      setNewTitle("");
+      setNewSubject("");
+      setNewSemester("");
+      alert("Note updated.");
+    } else {
+      // INSERT new note (body is NOT NULL in DB)
+      const { data, error } = await supabase
+        .from("notes")
+        .insert({
+          ...payload,
+          body: "", // prevents "body not-null" error
+        })
+        .select("id, title, subject, semester, created_at")
+        .single();
+
+      if (error || !data) {
+        console.error("Create note error:", error);
+        alert("Failed to create note.");
+        return;
+      }
+
+      const created = data as Note;
+      setNotes((prev) => [created, ...prev]);
+      setNewTitle("");
+      setNewSubject("");
+      setNewSemester("");
+      setSelectedNoteId(created.id);
+      alert("Note created.");
+    }
+  }
+
+  function handleEdit(note: Note) {
+    setEditingNoteId(note.id);
+    setNewTitle(note.title);
+    setNewSubject(note.subject ?? "");
+    setNewSemester(note.semester ?? "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Note delete
+  // ---------------------------------------------------------------------------
+
+  async function handleDelete(noteId: string) {
+    const confirmDelete = window.confirm(
+      "Delete this note and its attachments? This cannot be undone.",
+    );
+    if (!confirmDelete) return;
+
+    // best effort: delete attachments first
+    const { error: attachErr } = await supabase
+      .from("attachments")
+      .delete()
+      .eq("note_id", noteId);
+
+    if (attachErr) {
+      console.error("Delete attachments error:", attachErr);
+    }
+
+    const { error: noteErr } = await supabase
+      .from("notes")
+      .delete()
+      .eq("id", noteId);
+
+    if (noteErr) {
+      console.error("Delete note error:", noteErr);
+      alert("Failed to delete note.");
       return;
     }
+
+    setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    setRecentUploads((prev) => prev.filter((a) => a.note_id !== noteId));
+    if (selectedNoteId === noteId) setSelectedNoteId("");
+    alert("Note deleted.");
+  }
+
+  // ---------------------------------------------------------------------------
+  // File upload
+  // ---------------------------------------------------------------------------
+
+  async function handleUpload(e: FormEvent) {
+    e.preventDefault();
 
     if (!selectedNoteId) {
-      setUploadMsg("Please choose a note first.");
+      alert("Please select a note first.");
       return;
     }
 
     if (!file) {
-      setUploadMsg("Please choose a PDF or image file to upload.");
+      alert("Please choose a file first.");
       return;
     }
 
+    setUploading(true);
+
     try {
-      const bucket = "protected-files";
-      const safeName = file.name.replace(/\s+/g, "-");
-      const filePath = `${user.id}/${Date.now()}-${safeName}`;
+      const safeName = file.name.replace(/[^\w.-]/g, "_");
+      const filePath = `${selectedNoteId}/${Date.now()}-${safeName}`;
 
       // 1) Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
+      const { error: storageError } = await supabase.storage
+        .from("secure-assets")
         .upload(filePath, file);
 
-      if (uploadError) {
-        console.error("Upload error", uploadError);
-        setUploadMsg("Upload failed: " + uploadError.message);
+      if (storageError) {
+        console.error("Storage upload error:", storageError);
+        alert("Upload failed: " + storageError.message);
         return;
       }
 
-      // 2) Insert attachment row
+      // 2) Insert into attachments table
       const { error: insertError } = await supabase.from("attachments").insert({
         note_id: selectedNoteId,
         name: file.name,
         path: filePath,
-        mime_type: file.type,
+        mime_type: file.type || "application/octet-stream",
       });
 
       if (insertError) {
-        console.error("Insert attachment error", insertError);
-        setUploadMsg("File uploaded but DB insert failed: " + insertError.message);
+        console.error("Insert attachment error:", insertError);
+        alert(
+          "File uploaded but database insert failed: " + insertError.message,
+        );
         return;
       }
 
-      setUploadMsg("✅ File uploaded and linked to note.");
-
-      // Optionally refresh attachments list
-      const { data: attData } = await supabase
-        .from("attachments")
-        .select("id, note_id, name, mime_type, created_at")
-        .order("created_at", { ascending: false });
-
-      const typedAttachments: Attachment[] =
-        (attData ?? []).map((a: any) => ({
-          id: a.id,
-          note_id: a.note_id,
-          name: a.name,
-          mime_type: a.mime_type,
-          created_at: a.created_at,
-        })) || [];
-
-      setAttachments(typedAttachments);
+      alert("File uploaded successfully.");
       setFile(null);
-    } catch (err: any) {
-      console.error("Unexpected upload error", err);
-      setUploadMsg("Unexpected error during upload.");
+      const input = document.getElementById("file-input") as
+        | HTMLInputElement
+        | null;
+      if (input) input.value = "";
+
+      // refresh the “Recent uploads” card
+      await loadRecentUploads();
+    } finally {
+      setUploading(false);
     }
   }
 
-  // Not logged in: guard
-  if (!user) {
-    return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white/90 rounded-2xl border border-slate-200 shadow-sm p-5">
-          <h1 className="text-base font-semibold text-slate-900 mb-2">
-            Admin area
-          </h1>
-          <p className="text-sm text-slate-600">
-            You need to sign in first to access the admin dashboard.
-          </p>
-        </div>
-      </main>
-    );
+  // ---------------------------------------------------------------------------
+  // Helpers for display
+  // ---------------------------------------------------------------------------
+
+  function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString();
   }
 
-  // Logged in but not admin: friendly message, no queries run
-  if (!isAdmin) {
-    return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white/90 rounded-2xl border border-slate-200 shadow-sm p-5">
-          <h1 className="text-base font-semibold text-slate-900 mb-2">
-            Admin access only
-          </h1>
-          <p className="text-sm text-slate-600">
-            Your account <span className="font-mono">{user.email}</span> is not
-            listed as an admin email.
-          </p>
-          <p className="mt-2 text-xs text-slate-500">
-            To make yourself admin, add your email to{" "}
-            <code className="bg-slate-100 px-1 py-0.5 rounded">
-              VITE_ADMIN_EMAILS
-            </code>{" "}
-            in the environment variables (in Vercel and local development).
-          </p>
-        </div>
-      </main>
-    );
+  function label(note: Note) {
+    const subject = note.subject || "Subject";
+    const sem = note.semester || "Semester";
+    return `${subject} · Sem ${sem}`;
   }
 
-  // Admin view
+  const isEditing = Boolean(editingNoteId);
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-sky-50 to-slate-100">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 space-y-6">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/40 to-slate-100">
+      <main className="mx-auto max-w-5xl px-4 py-8 space-y-6">
+        {/* Page title + link to student view */}
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">
-              Admin dashboard
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-500">
+              Admin
             </p>
-            <h1 className="text-xl font-semibold text-slate-900">
+            <h1 className="mt-1 text-xl font-semibold text-slate-900">
               Manage notes & uploads
             </h1>
             <p className="mt-1 text-xs text-slate-500">
-              Upload PDFs/images for each note, and keep an overview of what is
-              available for students.
+              Create notes for each subject and semester, then attach PDFs/images
+              for your classmates.
             </p>
           </div>
-          <div className="rounded-full bg-white/80 border border-slate-200 px-4 py-2 text-[11px] text-slate-600 shadow-sm">
-            Signed in as <span className="font-mono">{user.email}</span>
+          <button
+            onClick={() => nav("/dashboard")}
+            className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+          >
+            View student dashboard
+          </button>
+        </div>
+
+        {/* Small stats banner */}
+        <section className="grid gap-3 sm:grid-cols-3 text-xs">
+          <div className="rounded-2xl border border-slate-100 bg-white/90 px-4 py-3 shadow-sm">
+            <p className="text-slate-500">Total notes</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {notes.length}
+            </p>
           </div>
-        </header>
+          <div className="rounded-2xl border border-slate-100 bg-white/90 px-4 py-3 shadow-sm">
+            <p className="text-slate-500">Recent uploads (last 5)</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {recentUploads.length}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-100 bg-white/90 px-4 py-3 shadow-sm">
+            <p className="text-slate-500">Quick tip</p>
+            <p className="mt-1 text-[11px] text-slate-600">
+              Keep titles clear (e.g. &quot;DBMS – Unit 1&quot;) so students find
+              the right PDF faster.
+            </p>
+          </div>
+        </section>
 
-        {errorMsg && (
-          <Alert variant="error">
-            {errorMsg}
-          </Alert>
-        )}
+        {/* Create / edit note + recent uploads */}
+        <section className="grid gap-6 md:grid-cols-[2fr,1.3fr] items-start">
+          {/* Create/edit form */}
+          <div className="rounded-3xl bg-white/95 p-6 shadow-sm border border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900 mb-1">
+              {isEditing ? "Edit note" : "Create a new note"}
+            </h2>
+            <p className="text-xs text-slate-500 mb-4">
+              {isEditing
+                ? "Update the title, subject or semester of this note."
+                : "Create a note, then upload PDFs/images in the section below."}
+            </p>
 
-        <section className="grid gap-5 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-start">
-          {/* Left: upload form + notes list */}
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-900">
-                Attach a file to a note
-              </h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Choose a note (e.g., &quot;DBMS – Unit 1&quot;) and upload a PDF
-                or image. Students will see it in the note viewer.
-              </p>
+            <form className="space-y-4" onSubmit={handleCreateOrUpdateNote}>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g. DBMS – Unit 1 notes"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                />
+              </div>
 
-              <form onSubmit={handleUpload} className="mt-4 space-y-3 text-xs">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Note
-                  </label>
-                  <select
-                    value={selectedNoteId}
-                    onChange={(e) => setSelectedNoteId(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select a note…</option>
-                    {notes.map((n) => (
-                      <option key={n.id} value={n.id}>
-                        {n.title} — {n.subject || "Subject"} ·{" "}
-                        {n.semester || "Semester"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    File (PDF or image)
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-700">
+                    Semester
                   </label>
                   <input
-                    type="file"
-                    accept="application/pdf,image/*"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0] || null;
-                      setFile(f);
-                    }}
-                    className="block w-full text-xs text-slate-600 file:mr-2 file:rounded-md file:border file:border-slate-200 file:bg-white file:px-2 file:py-1.5 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-50"
+                    type="text"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g. 3"
+                    value={newSemester}
+                    onChange={(e) => setNewSemester(e.target.value)}
                   />
                 </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-700">
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g. DBMS"
+                    value={newSubject}
+                    onChange={(e) => setNewSubject(e.target.value)}
+                  />
+                </div>
+              </div>
 
-                {uploadMsg && (
-                  <Alert
-                    variant={uploadMsg.startsWith("✅") ? "success" : "error"}
-                  >
-                    {uploadMsg}
-                  </Alert>
-                )}
-
+              <div className="flex items-center gap-3">
                 <button
                   type="submit"
-                  className="mt-2 inline-flex items-center rounded-md bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700"
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
                 >
-                  Upload file
+                  {isEditing ? "Save changes" : "Create note"}
                 </button>
-              </form>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-900 mb-2">
-                Notes overview
-              </h2>
-              {loading && (
-                <p className="text-xs text-slate-500">Loading notes…</p>
-              )}
-              {!loading && notes.length === 0 && (
-                <p className="text-xs text-slate-500">
-                  No notes yet. Add some rows to the <code>notes</code> table in
-                  Supabase so students can see content here.
-                </p>
-              )}
-              {!loading && notes.length > 0 && (
-                <ul className="mt-2 space-y-2 text-xs text-slate-600">
-                  {notes.slice(0, 8).map((n) => (
-                    <li
-                      key={n.id}
-                      className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate text-slate-800 font-medium">
-                          {n.title}
-                        </div>
-                        <div className="text-[11px] text-slate-500">
-                          {n.subject || "Subject"} ·{" "}
-                          {n.semester || "Semester"}
-                        </div>
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        {n.created_at
-                          ? new Date(n.created_at).toLocaleDateString()
-                          : ""}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingNoteId(null);
+                      setNewTitle("");
+                      setNewSubject("");
+                      setNewSemester("");
+                    }}
+                    className="text-xs font-medium text-slate-500 hover:underline"
+                  >
+                    Cancel edit
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
 
-          {/* Right: attachments list */}
-          <div className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-900 mb-2">
+          {/* Recent uploads */}
+          <div className="rounded-3xl bg-white/95 p-6 shadow-sm border border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900 mb-4">
               Recent uploads
             </h2>
-            {loading && (
-              <p className="text-xs text-slate-500">Loading attachments…</p>
-            )}
-            {!loading && attachments.length === 0 && (
+            {recentUploads.length === 0 ? (
               <p className="text-xs text-slate-500">
                 No files uploaded yet. Once you upload PDFs or images, they will
                 appear here with their note IDs.
               </p>
-            )}
-            {!loading && attachments.length > 0 && (
-              <ul className="mt-2 space-y-2 text-xs text-slate-600 max-h-80 overflow-auto">
-                {attachments.slice(0, 15).map((a) => (
+            ) : (
+              <ul className="space-y-2 text-xs">
+                {recentUploads.map((att) => (
                   <li
-                    key={a.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2"
+                    key={att.id}
+                    className="rounded-lg border border-slate-100 px-3 py-2 hover:bg-slate-50"
                   >
-                    <div className="min-w-0">
-                      <div className="truncate text-slate-800">
-                        {a.name}
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        Note ID:{" "}
-                        <span className="font-mono">
-                          {a.note_id.slice(0, 8)}…
-                        </span>{" "}
-                        · {a.mime_type}
-                      </div>
+                    <div className="font-medium text-slate-900 truncate">
+                      {att.name}
                     </div>
-                    <div className="text-[11px] text-slate-400">
-                      {a.created_at
-                        ? new Date(a.created_at).toLocaleDateString()
-                        : ""}
+                    <div className="text-[11px] text-slate-500">
+                      Note ID: {att.note_id} · {att.mime_type}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Uploaded {formatDate(att.created_at)}
                     </div>
                   </li>
                 ))}
@@ -405,9 +450,240 @@ const AdminDashboard: React.FC = () => {
             )}
           </div>
         </section>
-      </div>
-    </main>
-  );
-};
 
-export default AdminDashboard;
+        {/* Upload section */}
+        <section className="rounded-3xl bg-white/95 p-6 shadow-sm border border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-900 mb-2">
+            Attach a file to a note
+          </h2>
+          <p className="text-xs text-slate-500 mb-4">
+            Choose a note (e.g., &quot;DBMS – Unit 1&quot;) and upload a PDF or
+            image. Students will see it in the secure note viewer.
+          </p>
+
+          <form className="space-y-4" onSubmit={handleUpload}>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-700">
+                Note
+              </label>
+              <select
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={selectedNoteId}
+                onChange={(e) => setSelectedNoteId(e.target.value)}
+              >
+                <option value="">Select a note…</option>
+                {notes.map((note) => (
+                  <option key={note.id} value={note.id}>
+                    {note.title} — {label(note)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-700">
+                File (PDF or image)
+              </label>
+              <input
+                id="file-input"
+                type="file"
+                accept="application/pdf,image/*"
+                className="block w-full text-xs text-slate-600 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={uploading}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {uploading ? "Uploading…" : "Upload file"}
+            </button>
+          </form>
+        </section>
+
+        {/* Notes overview */}
+        <section className="rounded-3xl bg-white/95 p-6 shadow-sm border border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-900 mb-4">
+            Notes overview
+          </h2>
+          {loading ? (
+            <p className="text-xs text-slate-500">Loading notes…</p>
+          ) : notes.length === 0 ? (
+            <p className="text-xs text-slate-500">
+              No notes created yet. Use the form above to add your first note.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100 text-sm">
+              {notes.map((note) => (
+                <li
+                  key={note.id}
+                  className="flex items-center justify-between py-3"
+                >
+                  <div>
+                    <div className="font-medium text-slate-900">
+                      {note.title}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {label(note)}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-slate-500">
+                      {formatDate(note.created_at)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(note)}
+                      className="text-xs font-medium text-indigo-600 hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(note.id)}
+                      className="text-xs font-medium text-rose-600 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </main>
+
+      <AdminAnalytics />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Analytics component
+// ---------------------------------------------------------------------------
+function AdminAnalytics() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [viewCount, setViewCount] = useState(0);
+  const [downloadCount, setDownloadCount] = useState(0);
+  const [recent, setRecent] = useState<ActivityRow[]>([]);
+
+  useEffect(() => {
+    async function loadAnalytics() {
+      setLoading(true);
+      setError(null);
+
+      const since = new Date();
+      since.setDate(since.getDate() - 7); // last 7 days
+
+      const { data, error } = await supabase
+        .from("activity_logs")
+        .select("id, action, created_at, note_id")
+        .gte("created_at", since.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Failed to load analytics:", error.message);
+        setError("Could not load analytics");
+        setLoading(false);
+        return;
+      }
+
+      const rows = (data || []) as ActivityRow[];
+      setRecent(rows);
+
+      const views = rows.filter((row) => row.action === "note_view").length;
+      const downloads = rows.filter(
+        (row) => row.action === "attachment_open",
+      ).length;
+
+      setViewCount(views);
+      setDownloadCount(downloads);
+      setLoading(false);
+    }
+
+    loadAnalytics();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+        Loading analytics…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+        {error}
+      </div>
+    );
+  }
+
+  return (
+    <section className="mt-8 rounded-xl border border-slate-200 bg-white p-4">
+      <h2 className="mb-4 text-sm font-semibold text-slate-900">
+        Activity (last 7 days)
+      </h2>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+          <div className="text-xs text-slate-500">Note views</div>
+          <div className="text-xl font-semibold text-slate-900">
+            {viewCount}
+          </div>
+        </div>
+        <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+          <div className="text-xs text-slate-500">Attachment opens</div>
+          <div className="text-xl font-semibold text-slate-900">
+            {downloadCount}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-h-60 overflow-auto rounded-lg border border-slate-100">
+        <table className="min-w-full text-left text-xs">
+          <thead className="bg-slate-50 text-slate-500">
+            <tr>
+              <th className="px-3 py-2">Time</th>
+              <th className="px-3 py-2">Action</th>
+              <th className="px-3 py-2">Note ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recent.slice(0, 20).map((row) => (
+              <tr key={row.id} className="border-t border-slate-100">
+                <td className="px-3 py-2 text-slate-500">
+                  {new Date(row.created_at).toLocaleString()}
+                </td>
+                <td className="px-3 py-2">
+                  {row.action === "note_view"
+                    ? "Viewed note"
+                    : row.action === "attachment_open"
+                    ? "Opened attachment"
+                    : row.action}
+                </td>
+                <td className="px-3 py-2 text-slate-500">
+                  {row.note_id ?? "—"}
+                </td>
+              </tr>
+            ))}
+            {recent.length === 0 && (
+              <tr>
+                <td
+                  colSpan={3}
+                  className="px-3 py-4 text-center text-slate-500"
+                >
+                  No activity yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}

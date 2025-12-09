@@ -1,37 +1,48 @@
+// src/api/storageClient.ts
 import { supabase } from "./supabaseClient";
 
-const BUCKET = "secure-assets";
+const BUCKET = "secure-assets"; // ← replace with the exact bucket id from Supabase
 
+/**
+ * Upload a file for a specific note.
+ * Returns the storage path that is saved in the attachments table.
+ */
 export async function uploadNoteFile(
-  file: File,
-  noteId: string
-): Promise<string | null> {
-  // path inside bucket: notes/{noteId}/{timestamp_filename}
-  const safeName = file.name.replace(/\s+/g, "-").toLowerCase();
-  const filePath = `notes/${noteId}/${Date.now()}-${safeName}`;
+  noteId: string,
+  file: File
+): Promise<string> {
+  const safeName = file.name.replace(/[^\w.\-]/g, "_");
+  const timestamp = Date.now();
+  const filePath = `notes/${noteId}/${timestamp}-${safeName}`;
 
-  const { error } = await supabase.storage.from(BUCKET).upload(filePath, file, {
-    cacheControl: "3600",
-    upsert: false,
-  });
+  console.log("DEBUG upload bucket =", BUCKET, "path =", filePath);
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
 
   if (error) {
-    console.error("Upload error", error);
-    alert(error.message);
-    return null;
+    console.error("Storage upload error:", error);
+    throw new Error(error.message || "Failed to upload file");
   }
 
-  return filePath; // we’ll store this in the DB
+  return filePath;
 }
 
-export async function getSignedFileUrl(path: string): Promise<string | null> {
+/**
+ * Get a signed URL so the user can download/view the attachment.
+ */
+export async function getSignedFileUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage
     .from(BUCKET)
     .createSignedUrl(path, 60 * 10); // 10 minutes
 
-  if (error) {
-    console.error("Signed URL error", error);
-    return null;
+  if (error || !data?.signedUrl) {
+    console.error("Signed URL error:", error);
+    throw new Error(error?.message || "Failed to create signed URL");
   }
 
   return data.signedUrl;

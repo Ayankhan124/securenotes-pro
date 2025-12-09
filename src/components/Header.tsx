@@ -3,6 +3,12 @@ import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
+const ADMIN_EMAILS =
+  (import.meta.env.VITE_ADMIN_EMAILS || "")
+    .split(",")
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean);
+
 export default function Header() {
   const { user, signOut } = useAuth();
   const nav = useNavigate();
@@ -12,38 +18,47 @@ export default function Header() {
   const avatarUrl = meta.avatar_url as string | undefined;
 
   const displayName =
-    meta.name ||
-    user?.email?.split("@")[0] ||
-    "Account";
+    meta.name || user?.email?.split("@")[0] || "Account";
+
+  const isAdmin =
+    !!user &&
+    !!user.email &&
+    ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   async function handleSignOut() {
-    await signOut();
-    setMenuOpen(false);
-    nav("/login");
+    try {
+      await signOut();
+    } finally {
+      setMenuOpen(false);
+      nav("/");
+    }
   }
 
   return (
-    <header className="w-full border-b border-slate-100 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
-        {/* Brand */}
-        <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white">
-            SN
+    <header className="sticky top-0 z-[9999] w-full border-b border-slate-100 bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+        {/* Brand / logo */}
+        <Link to="/" className="flex items-center gap-2">
+          {/* Logo bubble using favicon.svg */}
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-500 to-sky-500 shadow-sm">
+            <img
+              src="/favicon.svg"
+              alt="SecureNotes Pro logo"
+              className="h-7 w-7"
+            />
           </div>
+
+          {/* Brand text */}
           <div className="leading-tight">
-            <div className="text-sm font-semibold text-slate-900">
+            <div className="text-sm font-semibold bg-gradient-to-r from-indigo-700 via-violet-600 to-sky-600 bg-clip-text text-transparent">
               SecureNotes Pro
             </div>
-            <div className="text-[11px] text-slate-400">
-              College notes hub
-            </div>
+            <div className="text-xs text-slate-500">College notes hub</div>
           </div>
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-5 text-xs sm:flex sm:text-sm">
-          {/* Home intentionally removed */}
-
           <NavLink
             to="/about"
             className={({ isActive }) =>
@@ -66,7 +81,7 @@ export default function Header() {
             </NavLink>
           )}
 
-          {user && (
+          {isAdmin && (
             <NavLink
               to="/admin/dashboard"
               className={({ isActive }) =>
@@ -77,31 +92,39 @@ export default function Header() {
               Admin
             </NavLink>
           )}
+        </nav>
 
+        {/* Right side: auth / avatar */}
+        <div className="flex items-center gap-3">
           {!user && (
             <>
-              <NavLink
+              <Link
                 to="/login"
-                className="text-slate-500 hover:text-slate-900"
+                className="hidden rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:inline-flex"
               >
                 Sign in
-              </NavLink>
-              <NavLink
+              </Link>
+              <Link
                 to="/register"
-                className="text-slate-500 hover:text-slate-900"
+                className="inline-flex rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700"
               >
-                Create account
-              </NavLink>
+                Get started
+              </Link>
             </>
           )}
 
           {user && (
             <div className="relative">
+              {/* Avatar button */}
               <button
-                onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs shadow-sm hover:bg-slate-50"
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs shadow-sm hover:border-indigo-300"
               >
-                <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-indigo-100 text-[11px] font-semibold text-indigo-700">
+                <span className="hidden max-w-[140px] truncate text-slate-700 sm:inline-block">
+                  {displayName}
+                </span>
+                <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-gradient-to-tr from-fuchsia-500 via-purple-500 to-sky-500 text-[11px] font-semibold text-white">
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
@@ -109,83 +132,57 @@ export default function Header() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    (displayName || "A").slice(0, 2).toUpperCase()
+                    displayName
+                      .split(" ")
+                      .map((p: string) => p[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()
                   )}
-                </div>
-                <span className="hidden max-w-[120px] truncate sm:inline-block">
-                  {displayName}
                 </span>
               </button>
 
+              {/* Dropdown panel */}
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-lg">
-                  <div className="mb-2 border-b border-slate-100 pb-2">
-                    <div className="font-medium text-slate-900">
-                      Signed in as
+                <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-slate-100 bg-white/95 p-3 text-xs shadow-xl ring-1 ring-slate-900/5">
+                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        Signed in
+                      </p>
+                      <p className="mt-0.5 truncate text-[13px] font-medium text-slate-900">
+                        {user.email}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        {isAdmin
+                          ? "Admin account · can upload & manage notes"
+                          : "Student account · read notes in the viewer"}
+                      </p>
                     </div>
-                    <div className="truncate text-slate-500">
-                      {user?.email}
-                    </div>
+                    <span
+                      className={
+                        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium " +
+                        (isAdmin
+                          ? "bg-amber-50 text-amber-700 border border-amber-100"
+                          : "bg-emerald-50 text-emerald-700 border border-emerald-100")
+                      }
+                    >
+                      {isAdmin ? "Admin" : "Viewer"}
+                    </span>
                   </div>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
-                  >
-                    Sign out
-                  </button>
+
+                  <div className="pt-3">
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-[11px] font-medium text-white hover:bg-slate-800"
+                    >
+                      Sign out
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-          )}
-        </nav>
-
-        {/* Mobile: avatar or sign-in button */}
-        <div className="flex items-center gap-2 sm:hidden">
-          {!user && (
-            <Link
-              to="/login"
-              className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700"
-            >
-              Sign in
-            </Link>
-          )}
-
-          {user && (
-            <>
-              <button
-                onClick={() => setMenuOpen((v) => !v)}
-                className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-indigo-100 text-[11px] font-semibold text-indigo-700"
-              >
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={displayName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  (displayName || "A").slice(0, 2).toUpperCase()
-                )}
-              </button>
-
-              {menuOpen && (
-                <div className="absolute right-3 top-12 w-56 rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-lg">
-                  <div className="mb-2 border-b border-slate-100 pb-2">
-                    <div className="font-medium text-slate-900">
-                      Signed in as
-                    </div>
-                    <div className="truncate text-slate-500">
-                      {user?.email}
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </>
           )}
         </div>
       </div>

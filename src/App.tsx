@@ -1,66 +1,30 @@
 // src/App.tsx
-import React from "react";
-import {
-  Routes,
-  Route,
-  useLocation,
-  Navigate,
-} from "react-router-dom";
-
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-
+import { Routes, Route } from "react-router-dom";
+import LayoutShell from "./components/LayoutShell";
 import LandingPage from "./pages/LandingPage";
 import AboutPage from "./pages/AboutPage";
-
-import UserLogin from "./pages/auth/UserLogin";
-import Register from "./pages/auth/Register";
-
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-
 import UserDashboard from "./pages/user/UserDashboard";
 import SecureNoteViewer from "./pages/user/SecureNoteViewer";
-
+import Register from "./pages/auth/Register";
+import UserLogin from "./pages/auth/UserLogin";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./lib/ProtectedRoute";
-import { useAuth } from "./lib/auth";
-
-function HomeRoute() {
-  const { user, loading } = useAuth();
-
-  // While auth is loading, render nothing (avoids flicker)
-  if (loading) return null;
-
-  // If logged in -> go straight to dashboard
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // If not logged in -> show marketing / sign-in page
-  return <LandingPage />;
-}
+import AdminRoute from "./lib/AdminRoute";
 
 function App() {
-  const location = useLocation();
-
-  // Routes where we hide header + footer
-  const hideChromeRoutes = ["/login", "/register", "/admin/login"];
-  const hideChrome = hideChromeRoutes.includes(location.pathname);
-
   return (
-    <>
-      {!hideChrome && <Header />}
-
+    <LayoutShell>
       <Routes>
-        {/* Public */}
-        <Route path="/" element={<HomeRoute />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/about" element={<AboutPage />} />
+
+        {/* Auth */}
         <Route path="/login" element={<UserLogin />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* Protected user routes */}
+        {/* Student area */}
         <Route
           path="/dashboard"
           element={
@@ -69,7 +33,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/notes/:id"
           element={
@@ -79,12 +42,15 @@ function App() {
           }
         />
 
-        {/* Admin dashboard (still behind auth) */}
+        {/* Admin area */}
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route
           path="/admin/dashboard"
           element={
             <ProtectedRoute>
-              <AdminDashboard />
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
             </ProtectedRoute>
           }
         />
@@ -92,9 +58,7 @@ function App() {
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-
-      {!hideChrome && <Footer />}
-    </>
+    </LayoutShell>
   );
 }
 

@@ -73,3 +73,25 @@ body {
 .vh-70 {
   min-height: 70vh;
 }
+/* --- SecureNotes Pro branding helpers --- */
+
+.page-shell {
+  /* overall page background */
+  @apply min-h-screen bg-slate-50;
+}
+
+.glass-card {
+  /* soft glassy card look */
+  @apply rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur;
+}
+
+.note-card {
+  /* clickable note cards */
+  @apply rounded-xl border border-slate-200/80 bg-white/90 px-4 py-3
+         hover:border-indigo-300 hover:bg-indigo-50/60 transition-colors;
+}
+
+.badge-pill {
+  /* small rounded badges */
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium;
+}
