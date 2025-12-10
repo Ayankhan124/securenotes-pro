@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./lib/ProtectedRoute";
 import AdminRoute from "./lib/AdminRoute";
+import { Analytics } from '@vercel/analytics/react';
 
 function App() {
   return (
@@ -19,7 +20,6 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/about" element={<AboutPage />} />
-
         {/* Auth */}
         <Route path="/login" element={<UserLogin />} />
         <Route path="/register" element={<Register />} />
@@ -58,6 +58,7 @@ function App() {
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <Analytics />
     </LayoutShell>
   );
 }
