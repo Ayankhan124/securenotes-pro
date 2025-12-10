@@ -1,4 +1,3 @@
-// src/pages/user/SecureNoteViewer.tsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../api/supabaseClient";
@@ -39,15 +38,19 @@ const SecureNoteViewer: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) {
-      setErrorMsg("Note not found.");
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
 
     async function load() {
       setLoading(true);
       setErrorMsg(null);
+
+      if (!id) {
+        if (!cancelled) {
+          setErrorMsg("Note not found.");
+          setLoading(false);
+        }
+        return;
+      }
 
       // 1) Load note details
       const { data: noteData, error: noteErr } = await supabase
@@ -58,25 +61,29 @@ const SecureNoteViewer: React.FC = () => {
 
       if (noteErr || !noteData) {
         console.error("Note load error", noteErr);
-        setErrorMsg("Could not find this note.");
-        setLoading(false);
+        if (!cancelled) {
+          setErrorMsg("Could not find this note.");
+          setLoading(false);
+        }
         return;
       }
 
-      setNote(noteData as NoteRow);
+      if (!cancelled) {
+        setNote(noteData as NoteRow);
+      }
 
-      // 2) Log that this user viewed this note
+      // Log note view
       try {
         await logActivity({
           action: "note_view",
           noteId: noteData.id,
-          userId: user?.id ?? null,
+          userId: user?.id ?? null
         });
       } catch (e) {
         console.error("Error logging note view", e);
       }
 
-      // 3) Load attachments for this note
+      // 2) Load attachments for this note
       const { data: attRows, error: attErr } = await supabase
         .from("attachments")
         .select("*")
@@ -85,14 +92,16 @@ const SecureNoteViewer: React.FC = () => {
 
       if (attErr) {
         console.error("Attachment load error", attErr);
-        setErrorMsg("Could not load attachments for this note.");
-        setLoading(false);
+        if (!cancelled) {
+          setErrorMsg("Could not load attachments for this note.");
+          setLoading(false);
+        }
         return;
       }
 
       const rows = (attRows || []) as AttachmentRow[];
-
       const signed: SignedAttachment[] = [];
+
       for (const row of rows) {
         const url = await getSignedFileUrl(row.path);
         if (url) {
@@ -100,12 +109,18 @@ const SecureNoteViewer: React.FC = () => {
         }
       }
 
-      setAttachments(signed);
-      setActiveId(signed[0]?.id || null);
-      setLoading(false);
+      if (!cancelled) {
+        setAttachments(signed);
+        setActiveId(signed[0]?.id || null);
+        setLoading(false);
+      }
     }
 
     load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, user?.id]);
 
   const activeAttachment =
@@ -120,13 +135,12 @@ const SecureNoteViewer: React.FC = () => {
 
   const watermarkUser = user?.email ?? "your account";
 
-  // Log when user opens the attachment in a new tab
   function handleOpenAttachment(att: SignedAttachment) {
     if (note?.id) {
       logActivity({
         action: "attachment_open",
         noteId: note.id,
-        userId: user?.id ?? null,
+        userId: user?.id ?? null
       }).catch((e) => console.error("Error logging attachment open", e));
     }
 
@@ -213,7 +227,6 @@ const SecureNoteViewer: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Simple inline viewer for PDFs/images */}
                 <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-slate-900/5">
                   <iframe
                     key={activeAttachment.id}

@@ -40,7 +40,7 @@ export default function AdminDashboard() {
 
   // upload state
   const [selectedNoteId, setSelectedNoteId] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null); // ← FIXED LINE
   const [uploading, setUploading] = useState(false);
 
   const nav = useNavigate();
@@ -317,20 +317,20 @@ export default function AdminDashboard() {
         </div>
 
         {/* Small stats banner */}
-        <section className="grid gap-3 sm:grid-cols-3 text-xs">
-          <div className="rounded-2xl border border-slate-100 bg-white/90 px-4 py-3 shadow-sm">
+        <section className="grid gap-3 text-xs sm:grid-cols-3">
+          <div className="glass-card rounded-2xl px-4 py-3">
             <p className="text-slate-500">Total notes</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">
               {notes.length}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-100 bg-white/90 px-4 py-3 shadow-sm">
+          <div className="glass-card rounded-2xl px-4 py-3">
             <p className="text-slate-500">Recent uploads (last 5)</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">
               {recentUploads.length}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-100 bg-white/90 px-4 py-3 shadow-sm">
+          <div className="glass-card rounded-2xl px-4 py-3">
             <p className="text-slate-500">Quick tip</p>
             <p className="mt-1 text-[11px] text-slate-600">
               Keep titles clear (e.g. &quot;DBMS – Unit 1&quot;) so students find
@@ -340,13 +340,13 @@ export default function AdminDashboard() {
         </section>
 
         {/* Create / edit note + recent uploads */}
-        <section className="grid gap-6 md:grid-cols-[2fr,1.3fr] items-start">
+        <section className="grid items-start gap-6 md:grid-cols-[2fr,1.3fr]">
           {/* Create/edit form */}
-          <div className="rounded-3xl bg-white/95 p-6 shadow-sm border border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-900 mb-1">
+          <div className="glass-card rounded-3xl p-6">
+            <h2 className="mb-1 text-sm font-semibold text-slate-900">
               {isEditing ? "Edit note" : "Create a new note"}
             </h2>
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="mb-4 text-xs text-slate-500">
               {isEditing
                 ? "Update the title, subject or semester of this note."
                 : "Create a note, then upload PDFs/images in the section below."}
@@ -419,8 +419,8 @@ export default function AdminDashboard() {
           </div>
 
           {/* Recent uploads */}
-          <div className="rounded-3xl bg-white/95 p-6 shadow-sm border border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-900 mb-4">
+          <div className="glass-card rounded-3xl p-6">
+            <h2 className="mb-4 text-sm font-semibold text-slate-900">
               Recent uploads
             </h2>
             {recentUploads.length === 0 ? (
@@ -435,7 +435,7 @@ export default function AdminDashboard() {
                     key={att.id}
                     className="rounded-lg border border-slate-100 px-3 py-2 hover:bg-slate-50"
                   >
-                    <div className="font-medium text-slate-900 truncate">
+                    <div className="truncate font-medium text-slate-900">
                       {att.name}
                     </div>
                     <div className="text-[11px] text-slate-500">
@@ -452,11 +452,11 @@ export default function AdminDashboard() {
         </section>
 
         {/* Upload section */}
-        <section className="rounded-3xl bg-white/95 p-6 shadow-sm border border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-900 mb-2">
+        <section className="glass-card rounded-3xl p-6">
+          <h2 className="mb-2 text-sm font-semibold text-slate-900">
             Attach a file to a note
           </h2>
-          <p className="text-xs text-slate-500 mb-4">
+          <p className="mb-4 text-xs text-slate-500">
             Choose a note (e.g., &quot;DBMS – Unit 1&quot;) and upload a PDF or
             image. Students will see it in the secure note viewer.
           </p>
@@ -496,7 +496,7 @@ export default function AdminDashboard() {
             <button
               type="submit"
               disabled={uploading}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {uploading ? "Uploading…" : "Upload file"}
             </button>
@@ -504,8 +504,8 @@ export default function AdminDashboard() {
         </section>
 
         {/* Notes overview */}
-        <section className="rounded-3xl bg-white/95 p-6 shadow-sm border border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-900 mb-4">
+        <section className="glass-card rounded-3xl p-6">
+          <h2 className="mb-4 text-sm font-semibold text-slate-900">
             Notes overview
           </h2>
           {loading ? (
@@ -609,7 +609,7 @@ function AdminAnalytics() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+      <div className="glass-card rounded-xl p-4 text-sm text-slate-500">
         Loading analytics…
       </div>
     );
@@ -617,26 +617,26 @@ function AdminAnalytics() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <div className="glass-card rounded-xl border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
         {error}
       </div>
     );
   }
 
   return (
-    <section className="mt-8 rounded-xl border border-slate-200 bg-white p-4">
+    <section className="glass-card mt-8 rounded-xl p-4">
       <h2 className="mb-4 text-sm font-semibold text-slate-900">
         Activity (last 7 days)
       </h2>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+        <div className="glass-card rounded-lg px-3 py-2 text-sm">
           <div className="text-xs text-slate-500">Note views</div>
           <div className="text-xl font-semibold text-slate-900">
             {viewCount}
           </div>
         </div>
-        <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+        <div className="glass-card rounded-lg px-3 py-2 text-sm">
           <div className="text-xs text-slate-500">Attachment opens</div>
           <div className="text-xl font-semibold text-slate-900">
             {downloadCount}

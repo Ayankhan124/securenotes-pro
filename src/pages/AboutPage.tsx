@@ -8,7 +8,10 @@ export default function AboutPage() {
             ABOUT
           </p>
           <h1 className="text-3xl font-bold text-slate-900">
-            SecureNotes Pro · College notes hub
+            SecureNotes Pro ·{" "} 
+            <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-500 bg-clip-text text-transparent">
+              College notes hub
+            </span>
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
             SecureNotes Pro keeps all your class PDFs and notes in one clean
@@ -38,7 +41,7 @@ export default function AboutPage() {
           ].map((f) => (
             <div
               key={f.title}
-              className="rounded-2xl border border-slate-100 bg-white/90 p-4 shadow-sm"
+              className="glass-card rounded-2xl p-4"
             >
               <h2 className="text-sm font-semibold text-slate-900">
                 {f.title}
@@ -51,7 +54,7 @@ export default function AboutPage() {
         </section>
 
         {/* How it works */}
-        <section className="rounded-2xl border border-slate-100 bg-white/90 p-6 shadow-sm">
+        <section className="glass-card rounded-2xl p-6">
           <h2 className="text-sm font-semibold text-slate-900">
             How SecureNotes Pro works
           </h2>
@@ -71,8 +74,8 @@ export default function AboutPage() {
           </ol>
         </section>
 
-        {/* FAQ */}
-        <section className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-6">
+        {/* FAQ-style section */}
+        <section className="glass-card rounded-2xl border-dashed p-6">
           <h2 className="text-sm font-semibold text-slate-900">
             Why not just WhatsApp or Drive?
           </h2>
@@ -86,7 +89,7 @@ export default function AboutPage() {
           </p>
         </section>
 
-        <p className="pt-4 text-[11px] text-slate-400 text-center">
+        <p className="pt-4 text-center text-[11px] text-slate-400">
           Built with care by Ayyan Khan for students who value clean notes.
         </p>
       </div>

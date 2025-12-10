@@ -1,4 +1,3 @@
-// src/pages/user/UserDashboard.tsx
 import { useEffect, useState, MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../api/supabaseClient";
@@ -10,6 +9,10 @@ type Note = {
   subject: string | null;
   semester: string | null;
   updated_at: string | null;
+};
+
+type UserMetadata = {
+  name?: string;
 };
 
 export default function UserDashboard() {
@@ -69,8 +72,10 @@ export default function UserDashboard() {
     }
   }
 
+  const meta: UserMetadata = (user?.user_metadata || {}) as UserMetadata;
+
   const displayName =
-    (user?.user_metadata as any)?.name ||
+    meta.name ||
     user?.email?.split("@")[0] ||
     user?.email ||
     "Student";
@@ -79,9 +84,9 @@ export default function UserDashboard() {
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/40 to-slate-100">
       <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
         {/* Top hero row */}
-        <section className="grid gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start">
+        <section className="grid items-start gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           {/* Welcome card */}
-          <div className="rounded-3xl border border-slate-100 bg-white/90 p-6 shadow-sm">
+          <div className="glass-card rounded-3xl p-6">
             <p className="text-xs uppercase tracking-wide text-slate-400">
               Welcome back
             </p>
@@ -101,7 +106,7 @@ export default function UserDashboard() {
           </div>
 
           {/* Session / info card */}
-          <aside className="rounded-3xl border border-slate-100 bg-white/90 p-5 shadow-sm text-xs text-slate-600 space-y-3">
+          <aside className="glass-card space-y-3 rounded-3xl p-5 text-xs text-slate-600">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-slate-900">
                 Session security
@@ -112,7 +117,7 @@ export default function UserDashboard() {
             </div>
             <div className="flex items-center justify-between">
               <span>Signed in as</span>
-              <span className="truncate max-w-[180px] text-right text-slate-500">
+              <span className="max-w-[180px] truncate text-right text-slate-500">
                 {user?.email}
               </span>
             </div>
@@ -126,9 +131,9 @@ export default function UserDashboard() {
         </section>
 
         {/* Notes + Help row */}
-        <section className="grid gap-6 md:grid-cols-[minmax(0,1.7fr)_minmax(0,1.05fr)] items-start">
+        <section className="grid items-start gap-6 md:grid-cols-[minmax(0,1.7fr)_minmax(0,1.05fr)]">
           {/* Notes list */}
-          <div className="rounded-3xl border border-slate-100 bg-white/95 p-5 shadow-sm">
+          <div className="glass-card rounded-3xl p-5">
             <header className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">
@@ -169,9 +174,7 @@ export default function UserDashboard() {
                         </h3>
                         <p className="mt-0.5 text-xs text-slate-500">
                           {(note.subject || "Subject not set") +
-                            (note.semester
-                              ? ` · Sem ${note.semester}`
-                              : "")}
+                            (note.semester ? ` · Sem ${note.semester}` : "")}
                         </p>
                         <p className="mt-0.5 text-[10px] text-slate-400">
                           {note.updated_at
@@ -200,7 +203,7 @@ export default function UserDashboard() {
 
           {/* Help / how it works */}
           <aside className="space-y-3">
-            <div className="rounded-3xl border border-slate-100 bg-white/90 p-4 shadow-sm text-xs text-slate-600">
+            <div className="glass-card rounded-3xl p-4 text-xs text-slate-600">
               <h3 className="mb-2 text-sm font-semibold text-slate-900">
                 How this page works
               </h3>
@@ -214,8 +217,8 @@ export default function UserDashboard() {
               </ul>
             </div>
 
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 p-4 text-[11px] text-slate-600">
-              <p className="font-semibold text-slate-900 mb-1">
+            <div className="glass-card rounded-3xl border-dashed p-4 text-[11px] text-slate-600">
+              <p className="mb-1 font-semibold text-slate-900">
                 Tip for sharing with friends
               </p>
               <p>

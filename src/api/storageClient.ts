@@ -1,4 +1,3 @@
-// src/api/storageClient.ts
 import { supabase } from "./supabaseClient";
 
 const BUCKET = "secure-assets"; // ← replace with the exact bucket id from Supabase
@@ -11,7 +10,7 @@ export async function uploadNoteFile(
   noteId: string,
   file: File
 ): Promise<string> {
-  const safeName = file.name.replace(/[^\w.\-]/g, "_");
+  const safeName = file.name.replace(/[^\w.-]/g, "_");
   const timestamp = Date.now();
   const filePath = `notes/${noteId}/${timestamp}-${safeName}`;
 

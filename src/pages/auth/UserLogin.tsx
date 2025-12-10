@@ -10,13 +10,9 @@ const UserLogin: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Google
-  const [oauthLoading, setOauthLoading] = useState(false);
-
-  // Phone OTP
-  const [phone, setPhone] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [otpStep, setOtpStep] = useState<"idle" | "code-sent">("idle");
+  // OAuth loading states
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [githubLoading, setGithubLoading] = useState(false);
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -44,10 +40,10 @@ const UserLogin: React.FC = () => {
     nav("/dashboard");
   }
 
-  // 2) Google login (works on localhost + Vercel)
+  // 2) Google login
   async function handleGoogleLogin() {
     try {
-      setOauthLoading(true);
+      setGoogleLoading(true);
       setErrorMsg("");
 
       const { error } = await supabase.auth.signInWithOAuth({
@@ -60,85 +56,42 @@ const UserLogin: React.FC = () => {
       if (error) {
         setErrorMsg(error.message);
       }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setErrorMsg(err.message);
+      } else {
+        setErrorMsg("Google login failed");
+      }
     } finally {
-      setOauthLoading(false);
+      setGoogleLoading(false);
     }
   }
-  // 2b) GitHub login
+
+  // 3) GitHub login
   async function handleGithubLogin() {
-  try {
-    setErrorMsg("");
+    try {
+      setGithubLoading(true);
+      setErrorMsg("");
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
 
-    if (error) {
-      setErrorMsg(error.message);
+      if (error) {
+        setErrorMsg(error.message);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setErrorMsg(err.message);
+      } else {
+        setErrorMsg("GitHub login failed");
+      }
+    } finally {
+      setGithubLoading(false);
     }
-  } catch (err: any) {
-    setErrorMsg(err.message ?? "GitHub login failed");
-  }
-}
-
-  // 3) Phone OTP - step 1: send SMS
-  async function handleSendOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setErrorMsg("");
-
-    if (!phone) {
-      setErrorMsg("Please enter your phone number.");
-      return;
-    }
-
-    // Simple helper: if user types 10 digits, auto-prefix +91
-    let formatted = phone.trim();
-    if (/^\d{10}$/.test(formatted)) {
-      formatted = "+91" + formatted;
-    }
-
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: formatted,
-    });
-
-    if (error) {
-      setErrorMsg(error.message);
-      return;
-    }
-
-    setOtpStep("code-sent");
-  }
-
-  // 4) Phone OTP - step 2: verify code
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setErrorMsg("");
-
-    if (!phone || !otpCode) {
-      setErrorMsg("Enter both phone number and code.");
-      return;
-    }
-
-    let formatted = phone.trim();
-    if (/^\d{10}$/.test(formatted)) {
-      formatted = "+91" + formatted;
-    }
-
-    const { error } = await supabase.auth.verifyOtp({
-      phone: formatted,
-      token: otpCode,
-      type: "sms",
-    });
-
-    if (error) {
-      setErrorMsg(error.message);
-      return;
-    }
-
-    nav("/dashboard");
   }
 
   return (
@@ -149,7 +102,7 @@ const UserLogin: React.FC = () => {
       {/* Email/password form */}
       <form onSubmit={handleEmailPassword} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">
+          <label className="mb-1 block text-xs font-medium text-slate-600">
             Email address
           </label>
           <input
@@ -157,13 +110,13 @@ const UserLogin: React.FC = () => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
             placeholder="you@college.com"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">
+          <label className="mb-1 block text-xs font-medium text-slate-600">
             Password
           </label>
           <input
@@ -171,13 +124,13 @@ const UserLogin: React.FC = () => {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
             placeholder="••••••••"
           />
         </div>
 
         {errorMsg && (
-          <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+          <p className="rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-500">
             {errorMsg}
           </p>
         )}
@@ -185,7 +138,7 @@ const UserLogin: React.FC = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
+          className="w-full rounded-md bg-indigo-600 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>
@@ -202,31 +155,31 @@ const UserLogin: React.FC = () => {
       <button
         type="button"
         onClick={handleGoogleLogin}
-        disabled={oauthLoading}
-        className="w-full py-2.5 rounded-md border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        disabled={googleLoading}
+        className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="text-lg">G</span>
         <span>Continue with Google</span>
       </button>
+
       {/* GitHub login */}
       <button
-  type="button"
-  onClick={handleGithubLogin}
-  className="mt-2 w-full py-2.5 rounded-md border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2"
->
-  <span className="text-lg">🐱</span>
-  <span>Continue with GitHub</span>
-</button>
-
-
+        type="button"
+        onClick={handleGithubLogin}
+        disabled={githubLoading}
+        className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className="text-lg">🐱</span>
+        <span>Continue with GitHub</span>
+      </button>
 
       {/* Footer links */}
-      <div className="mt-6 text-xs text-slate-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="mt-6 flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <span>
           Don&apos;t have an account?{" "}
           <Link
             to="/register"
-            className="text-indigo-600 font-medium hover:underline"
+            className="font-medium text-indigo-600 hover:underline"
           >
             Create one
           </Link>
