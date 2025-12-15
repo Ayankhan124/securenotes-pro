@@ -13,16 +13,28 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./lib/ProtectedRoute";
 import AdminRoute from "./lib/AdminRoute";
 import { Analytics } from '@vercel/analytics/react';
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
+import { useEffect } from "react";
+import { supabase } from "./api/supabaseClient";
 
 function App() {
+  useEffect(() => {
+    // VERY IMPORTANT: activates recovery session from email link
+    supabase.auth.getSession();
+  }, []);
+
   return (
     <LayoutShell>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/about" element={<AboutPage />} />
+
         {/* Auth */}
         <Route path="/login" element={<UserLogin />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Student area */}
         <Route
@@ -33,6 +45,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/notes/:id"
           element={
@@ -42,7 +55,7 @@ function App() {
           }
         />
 
-        {/* Admin area */}
+        {/* Admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
           path="/admin/dashboard"
@@ -55,7 +68,6 @@ function App() {
           }
         />
 
-        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Analytics />

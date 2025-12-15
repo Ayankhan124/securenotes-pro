@@ -184,9 +184,12 @@ const UserLogin: React.FC = () => {
             Create one
           </Link>
         </span>
-        <span className="text-slate-400">
-          Forgot password? Contact your administrator.
-        </span>
+        <Link
+  to="/forgot-password"
+  className="font-medium text-indigo-600 hover:underline"
+>
+  Forgot password?
+</Link>
       </div>
     </AuthShell>
   );
