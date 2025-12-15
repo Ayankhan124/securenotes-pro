@@ -19,23 +19,16 @@ import { useEffect } from "react";
 import { supabase } from "./api/supabaseClient";
 
 function App() {
-  useEffect(() => {
-    // VERY IMPORTANT: activates recovery session from email link
-    supabase.auth.getSession();
-  }, []);
-
   return (
     <LayoutShell>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/about" element={<AboutPage />} />
-
         {/* Auth */}
         <Route path="/login" element={<UserLogin />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-
+        <Route path="/Reset-password" element={<ResetPassword />} />
         {/* Student area */}
         <Route
           path="/dashboard"
@@ -45,7 +38,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/notes/:id"
           element={
@@ -55,7 +47,7 @@ function App() {
           }
         />
 
-        {/* Admin */}
+        {/* Admin area */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
           path="/admin/dashboard"
@@ -68,6 +60,7 @@ function App() {
           }
         />
 
+        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Analytics />
