@@ -6,7 +6,6 @@ import { getPasswordStrength } from "../../lib/passwordStrength";
 
 export default function ResetPassword() {
   const nav = useNavigate();
-
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -15,31 +14,28 @@ export default function ResetPassword() {
 
   const strength = getPasswordStrength(password);
 
-  // 🔎 Password rules
-  const rules = {
-    length: password.length >= 8,
-    uppercase: /[A-Z]/.test(password),
-    number: /\d/.test(password),
-    special: /[^A-Za-z0-9]/.test(password),
-  };
-
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    
 
+    // 1️⃣ Confirm password check
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
+    // 2️⃣ Strength check
     if (!strength.isStrongEnough) {
-      setError("Please meet all password requirements.");
+      setError("Please choose a stronger password.");
       return;
     }
 
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.updateUser({
+      password,
+    });
 
     setLoading(false);
 
@@ -48,9 +44,8 @@ export default function ResetPassword() {
       return;
     }
 
-    // 🔐 Force re-login after reset
-    await supabase.auth.signOut();
-    nav("/login", { replace: true });
+    // 3️⃣ Auto-login (Supabase already authenticated user)
+    nav("/dashboard", { replace: true });
   }
 
   return (
@@ -59,26 +54,27 @@ export default function ResetPassword() {
       subtitle="Choose a strong password for your account."
     >
       <form onSubmit={handleUpdate} className="space-y-4">
-        {/* Password field */}
+        {/* New password */}
         <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-slate-200 px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-indigo-500"
-            placeholder="••••••••"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-700"
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
-        </div>
+  <input
+    type={showPassword ? "text" : "password"}
+    required
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    className="w-full rounded-md border border-slate-200 px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-indigo-500"
+    placeholder="••••••••"
+  />
+  <button
+    type="button"
+    onClick={() => setShowPassword((v) => !v)}
+    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-700"
+  >
+    {showPassword ? "Hide" : "Show"}
+  </button>
+</div>
 
-        {/* Password strength bar */}
+
+        {/* Password strength meter */}
         <div className="space-y-1">
           <div className="h-1 w-full rounded bg-slate-200">
             <div
@@ -98,22 +94,6 @@ export default function ResetPassword() {
             <span className="font-medium">{strength.label}</span>
           </p>
         </div>
-
-        {/* ✅ Password rules */}
-        <ul className="text-[11px] space-y-0.5">
-          <li className={rules.length ? "text-emerald-600" : "text-slate-500"}>
-            • Minimum 8 characters
-          </li>
-          <li className={rules.uppercase ? "text-emerald-600" : "text-slate-500"}>
-            • At least 1 uppercase letter
-          </li>
-          <li className={rules.number ? "text-emerald-600" : "text-slate-500"}>
-            • At least 1 number
-          </li>
-          <li className={rules.special ? "text-emerald-600" : "text-slate-500"}>
-            • At least 1 special character
-          </li>
-        </ul>
 
         {/* Confirm password */}
         <div>
