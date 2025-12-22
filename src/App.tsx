@@ -1,4 +1,3 @@
-// src/App.tsx
 import { Routes, Route } from "react-router-dom";
 import LayoutShell from "./components/LayoutShell";
 import LandingPage from "./pages/LandingPage";
@@ -12,51 +11,38 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./lib/ProtectedRoute";
 import AdminRoute from "./lib/AdminRoute";
-import { Analytics } from '@vercel/analytics/react';
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
-import { useEffect } from "react";
-import { supabase } from "./api/supabaseClient";
+import { Analytics } from '@vercel/analytics/react';
 
 function App() {
   return (
     <LayoutShell>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/about" element={<AboutPage />} />
-        {/* Auth */}
+        
+        {/* Auth Routes */}
         <Route path="/login" element={<UserLogin />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/Reset-password" element={<ResetPassword />} />
-        {/* Student area */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <UserDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notes/:id"
-          element={
-            <ProtectedRoute>
-              <SecureNoteViewer />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Admin area */}
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* 🔒 Protected User Area (Layout Route) */}
+        <Route element={<ProtectedRoute><OutletWrapper /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<UserDashboard />} />
+          <Route path="/notes/:id" element={<SecureNoteViewer />} />
+        </Route>
+
+        {/* 🛡️ Protected Admin Area */}
         <Route
           path="/admin/dashboard"
           element={
-            <ProtectedRoute>
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            </ProtectedRoute>
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
           }
         />
 
@@ -67,5 +53,9 @@ function App() {
     </LayoutShell>
   );
 }
+
+// Helper to render nested child routes
+import { Outlet } from "react-router-dom";
+const OutletWrapper = () => <Outlet />;
 
 export default App;

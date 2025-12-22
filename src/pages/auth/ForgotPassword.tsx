@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom"; // Added missing Link import
 import { supabase } from "../../api/supabaseClient";
 import AuthShell from "../../components/AuthShell";
+import { Alert } from "../../components/Alert";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -8,6 +10,13 @@ export default function ForgotPassword() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
+
+  // Timer logic
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const interval = setInterval(() => setCooldown((c) => c - 1), 1000);
+    return () => clearInterval(interval);
+  }, [cooldown]);
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault();
@@ -23,22 +32,18 @@ export default function ForgotPassword() {
     setLoading(false);
 
     if (error) {
-      setError(error.message);
+      // 🛡️ SECURITY: Handle Rate Limiting explicitly
+      if (error.status === 429) {
+        setError("Too many requests. Please wait 60 seconds.");
+        setCooldown(60);
+      } else {
+        setError(error.message);
+      }
       return;
     }
 
     setSent(true);
     setCooldown(60);
-
-    const timer = setInterval(() => {
-      setCooldown((c) => {
-        if (c <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
   }
 
   return (
@@ -48,21 +53,27 @@ export default function ForgotPassword() {
     >
       {sent ? (
         <div className="space-y-4 text-center">
+          <Alert variant="success">
+            Check your email for the reset link.
+          </Alert>
+          
           <p className="text-sm text-slate-600">
-            If an account exists for <br />
-            <span className="font-medium">{email}</span>, <br />
-            a reset link has been sent.
+            Didn't receive it? Check spam or try again later.
           </p>
 
           <button
             disabled={cooldown > 0}
             onClick={handleReset}
-            className="w-full rounded-md border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="w-full rounded-md border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 transition-colors"
           >
-            {cooldown > 0
-              ? `Resend in ${cooldown}s`
-              : "Resend reset email"}
+            {cooldown > 0 ? `Resend available in ${cooldown}s` : "Resend email"}
           </button>
+          
+           <div className="mt-4 text-xs">
+            <Link to="/login" className="text-indigo-600 font-medium hover:underline">
+              Back to Sign In
+            </Link>
+          </div>
         </div>
       ) : (
         <form onSubmit={handleReset} className="space-y-4">
@@ -75,24 +86,26 @@ export default function ForgotPassword() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="you@college.com"
             />
           </div>
 
-          {error && (
-            <p className="rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-500">
-              {error}
-            </p>
-          )}
+          {error && <Alert variant="error">{error}</Alert>}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+            disabled={loading || cooldown > 0}
+            className="w-full rounded-md bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 transition-colors"
           >
-            {loading ? "Sending…" : "Send reset link"}
+            {loading ? "Sending..." : cooldown > 0 ? `Wait ${cooldown}s` : "Send reset link"}
           </button>
+          
+          <div className="mt-6 text-center text-xs">
+            <Link to="/login" className="text-slate-500 hover:text-slate-700">
+              Return to login
+            </Link>
+          </div>
         </form>
       )}
     </AuthShell>
