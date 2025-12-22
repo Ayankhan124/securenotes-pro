@@ -1,4 +1,4 @@
-// src/pages/auth/AdminLogin.tsx
+// src/pages/admin/AdminLogin.tsx
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../api/supabaseClient";
@@ -7,19 +7,21 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const nav = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    setErrorMsg("");
 
     if (!email || !password) {
-      alert("Please enter email and password.");
+      setErrorMsg("Please enter email and password.");
       return;
     }
 
     setLoading(true);
     try {
-      // 1) Sign in with Supabase (email + password)
+      // 1) Sign in with Supabase
       const { data: signInData, error: signInError } =
         await supabase.auth.signInWithPassword({
           email,
@@ -27,60 +29,34 @@ export default function AdminLogin() {
         });
 
       if (signInError || !signInData.user) {
-        console.error("Admin sign in error:", signInError);
-        alert("Sign in failed: " + (signInError?.message ?? "Unknown error"));
+        setErrorMsg(signInError?.message || "Sign in failed");
         return;
       }
 
-      // 2) Load the current auth user
-      const { data: userRes, error: userError } =
-        await supabase.auth.getUser();
-
-      if (userError || !userRes.user) {
-        console.error("getUser error:", userError);
-        alert(
-          "Failed to load authenticated user: " +
-            (userError?.message ?? "Unknown error"),
-        );
-        return;
-      }
-
-      const currentEmail = userRes.user.email;
-      if (!currentEmail) {
-        alert("Authenticated user has no email.");
-        return;
-      }
-
-      // 3) Load profile rows by EMAIL (not by id)
-      const { data: profileRows, error: profileError } = await supabase
+      // 2) 🔐 SECURITY: Query profile by ID (not email) to prevent hijacking
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("email, role, status")
-        .eq("email", currentEmail);
+        .select("role, status")
+        .eq("id", signInData.user.id) // ✅ Safe
+        .single();
 
-      if (profileError) {
-        console.error("Profile query error:", profileError);
-        alert(
-          "Profile query error: " +
-            (profileError.message ?? "Unknown error"),
-        );
+      if (profileError || !profile) {
+        setErrorMsg("Could not verify admin privileges.");
+        await supabase.auth.signOut(); // Kick them out immediately
         return;
       }
 
-      const profile = profileRows && profileRows[0];
-
-      if (!profile) {
-        alert("No profile row found for this email: " + currentEmail);
-        return;
-      }
-
-      // 4) Check role + status
+      // 3) Check role + status
       if (profile.role !== "admin" || profile.status !== "active") {
-        alert("Not an active admin account.");
+        setErrorMsg("Access denied: Not an active admin account.");
+        await supabase.auth.signOut();
         return;
       }
 
-      // 5) Success → go to admin dashboard
+      // 4) Success
       nav("/admin/dashboard");
+    } catch (err) {
+      setErrorMsg("An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -120,12 +96,18 @@ export default function AdminLogin() {
             />
           </div>
 
+          {errorMsg && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-100">
+              {errorMsg}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed mt-4"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Verifying..." : "Login"}
           </button>
         </form>
       </div>

@@ -1,11 +1,14 @@
+// src/pages/auth/ResetPassword.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../api/supabaseClient";
 import AuthShell from "../../components/AuthShell";
 import { getPasswordStrength } from "../../lib/passwordStrength";
+import { useAuth } from "../../lib/auth"; // ✅ Import useAuth
 
 export default function ResetPassword() {
   const nav = useNavigate();
+  const { user } = useAuth(); // ✅ Get current session
 
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
@@ -13,9 +16,26 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const strength = getPasswordStrength(password);
+  // 🔐 SECURITY: If no session (link invalid/expired), don't show form
+  if (!user) {
+    return (
+      <AuthShell title="Invalid Link" subtitle="Security Check Failed">
+        <div className="text-center space-y-4">
+          <p className="text-sm text-slate-600">
+            This password reset link is invalid or has expired.
+          </p>
+          <button
+            onClick={() => nav("/forgot-password")}
+            className="w-full rounded-md bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            Request new link
+          </button>
+        </div>
+      </AuthShell>
+    );
+  }
 
-  // 🔎 Password rules
+  const strength = getPasswordStrength(password);
   const rules = {
     length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
@@ -48,7 +68,6 @@ export default function ResetPassword() {
       return;
     }
 
-    // 🔐 Force re-login after reset
     await supabase.auth.signOut();
     nav("/login", { replace: true });
   }
@@ -59,7 +78,6 @@ export default function ResetPassword() {
       subtitle="Choose a strong password for your account."
     >
       <form onSubmit={handleUpdate} className="space-y-4">
-        {/* Password field */}
         <div className="relative">
           <input
             type={showPassword ? "text" : "password"}
@@ -78,7 +96,7 @@ export default function ResetPassword() {
           </button>
         </div>
 
-        {/* Password strength bar */}
+        {/* Strength Meter & Rules */}
         <div className="space-y-1">
           <div className="h-1 w-full rounded bg-slate-200">
             <div
@@ -94,28 +112,17 @@ export default function ResetPassword() {
             />
           </div>
           <p className="text-[11px] text-slate-500">
-            Password strength{" "}
-            <span className="font-medium">{strength.label}</span>
+            Strength: <span className="font-medium">{strength.label}</span>
           </p>
         </div>
 
-        {/* ✅ Password rules */}
         <ul className="text-[11px] space-y-0.5">
-          <li className={rules.length ? "text-emerald-600" : "text-slate-500"}>
-            • Minimum 8 characters
-          </li>
-          <li className={rules.uppercase ? "text-emerald-600" : "text-slate-500"}>
-            • At least 1 uppercase letter
-          </li>
-          <li className={rules.number ? "text-emerald-600" : "text-slate-500"}>
-            • At least 1 number
-          </li>
-          <li className={rules.special ? "text-emerald-600" : "text-slate-500"}>
-            • At least 1 special character
-          </li>
+          <li className={rules.length ? "text-emerald-600" : "text-slate-500"}>• Min 8 chars</li>
+          <li className={rules.uppercase ? "text-emerald-600" : "text-slate-500"}>• 1 Uppercase</li>
+          <li className={rules.number ? "text-emerald-600" : "text-slate-500"}>• 1 Number</li>
+          <li className={rules.special ? "text-emerald-600" : "text-slate-500"}>• 1 Special</li>
         </ul>
 
-        {/* Confirm password */}
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">
             Confirm password
