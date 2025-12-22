@@ -1,14 +1,14 @@
 // src/pages/auth/ResetPassword.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../api/supabaseClient";
 import AuthShell from "../../components/AuthShell";
 import { getPasswordStrength } from "../../lib/passwordStrength";
-import { useAuth } from "../../lib/auth"; // ✅ Import useAuth
+import { useAuth } from "../../lib/auth";
 
 export default function ResetPassword() {
   const nav = useNavigate();
-  const { user } = useAuth(); // ✅ Get current session
+  const { user, loading: authLoading } = useAuth(); // 👈 Get loading state
 
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
@@ -16,7 +16,18 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 🔐 SECURITY: If no session (link invalid/expired), don't show form
+  // 🔄 1. Wait for Auth to initialize before judging the user session
+  if (authLoading) {
+    return (
+      <AuthShell title="Verifying..." subtitle="Please wait">
+        <div className="flex justify-center py-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600" />
+        </div>
+      </AuthShell>
+    );
+  }
+
+  // 🔐 2. NOW it is safe to check for user
   if (!user) {
     return (
       <AuthShell title="Invalid Link" subtitle="Security Check Failed">
@@ -68,8 +79,10 @@ export default function ResetPassword() {
       return;
     }
 
+    // Sign out to force re-login with new password
     await supabase.auth.signOut();
     nav("/login", { replace: true });
+    alert("Password updated successfully. Please sign in.");
   }
 
   return (
@@ -96,7 +109,7 @@ export default function ResetPassword() {
           </button>
         </div>
 
-        {/* Strength Meter & Rules */}
+        {/* Strength Meter */}
         <div className="space-y-1">
           <div className="h-1 w-full rounded bg-slate-200">
             <div
@@ -117,10 +130,18 @@ export default function ResetPassword() {
         </div>
 
         <ul className="text-[11px] space-y-0.5">
-          <li className={rules.length ? "text-emerald-600" : "text-slate-500"}>• Min 8 chars</li>
-          <li className={rules.uppercase ? "text-emerald-600" : "text-slate-500"}>• 1 Uppercase</li>
-          <li className={rules.number ? "text-emerald-600" : "text-slate-500"}>• 1 Number</li>
-          <li className={rules.special ? "text-emerald-600" : "text-slate-500"}>• 1 Special</li>
+          <li className={rules.length ? "text-emerald-600" : "text-slate-500"}>
+            • Min 8 chars
+          </li>
+          <li className={rules.uppercase ? "text-emerald-600" : "text-slate-500"}>
+            • 1 Uppercase
+          </li>
+          <li className={rules.number ? "text-emerald-600" : "text-slate-500"}>
+            • 1 Number
+          </li>
+          <li className={rules.special ? "text-emerald-600" : "text-slate-500"}>
+            • 1 Special
+          </li>
         </ul>
 
         <div>

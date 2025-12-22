@@ -157,3 +157,7 @@ body {
   animation: auth-card-in 0.45s ease-out;
   transform-origin: center;
 }
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
